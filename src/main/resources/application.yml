@@ -1,3 +1,26 @@
 spring:
   application:
     name: ticketbox
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3307/ticketbox?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8}
+    username: ${DB_USERNAME:ticketmysql}
+    password: ${DB_PASSWORD:ticketmysql}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6380}
+      password: ${REDIS_PASSWORD:ticketredis}
+
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    ttl: ${JWT_TTL:24h}

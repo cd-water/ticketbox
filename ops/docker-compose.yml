@@ -1,1 +1,61 @@
 name: ticketbox
+
+services:
+  mysql:
+    image: mysql:8.0.46
+    container_name: ticketbox-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ticketmysql}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ticketbox}
+      MYSQL_USER: ${MYSQL_USER:-ticketmysql}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ticketmysql}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - ticketbox-network
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7.4.11
+    container_name: ticketbox-redis
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-ticketredis}"]
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - ticketbox-network
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: ticketbox-minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-ticketminio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-ticketminio}
+    ports:
+      - "9001:9000"
+      - "9002:9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - ticketbox-network
+
+volumes:
+  mysql-data:
+    name: mysql-data
+  redis-data:
+    name: redis-data
+  minio-data:
+    name: minio-data
+
+networks:
+  ticketbox-network:
+    name: ticketbox-network
+    driver: bridge

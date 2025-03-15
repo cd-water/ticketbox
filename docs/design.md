@@ -42,8 +42,8 @@
 
 ```
 com.cdwater.ticketbox
-├── common        # 异常、ProblemDetail、分页、JWT 工具、校验
-├── auth          # 注册/登录、用户
+├── common        # 异常、ProblemDetail、分页、校验
+├── auth          # 注册/登录、JWT、用户
 ├── event         # 演出、城市筛选、封面
 ├── performance   # 场次、区域、座位生成
 ├── seat          # 座位图查询、座位状态
@@ -119,7 +119,7 @@ com.cdwater.ticketbox
 
 | 端 | 接口 |
 | --- | --- |
-| 认证 | `POST /api/auth/register`、`POST /api/auth/login` |
+| 认证 | `POST /api/auth/register`、`POST /api/auth/login`、`GET /api/me` |
 | 浏览 | `GET /api/events`(城市/日期/分页)、`GET /api/events/{id}`、`GET /api/performances/{id}/seat-map` |
 | 等待室 | `POST /api/performances/{id}/waiting-room/join`、`GET .../waiting-room/status` |
 | 订单 | `POST /api/orders`(Idempotency-Key)、`GET /api/orders`、`GET /api/orders/{id}`、`POST /api/orders/{id}/cancel` |
