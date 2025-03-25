@@ -1,0 +1,31 @@
+:root {
+  --el-color-primary: #b8441a;
+  --el-color-primary-light-3: #cf6b45;
+  --el-color-primary-light-5: #df9073;
+  --el-color-primary-light-7: #eebaa5;
+  --el-color-primary-light-8: #f4d2c4;
+  --el-color-primary-light-9: #faebe4;
+  --el-color-primary-dark-2: #933512;
+  --el-bg-color: #fffdf9;
+  --el-bg-color-page: #faf7f2;
+  --el-bg-color-overlay: #fffdf9;
+  --el-text-color-primary: #1c1917;
+  --el-text-color-regular: #44403c;
+  --el-text-color-secondary: #78716c;
+  --el-border-color: #e3ddd3;
+  --el-border-color-light: #ece7df;
+  --el-border-radius-base: 6px;
+  --el-font-family: 'Schibsted Grotesk Variable', system-ui, sans-serif;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--el-bg-color-page);
+  color: var(--el-text-color-primary);
+}

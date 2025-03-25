@@ -85,3 +85,35 @@ export function login(username: string, password: string) {
 export function me() {
   return request<Profile>('/api/me')
 }
+
+export interface EventSummary {
+  id: number
+  title: string
+  city: string
+  coverUrl: string | null
+}
+
+export interface EventDetail extends EventSummary {
+  description: string
+}
+
+export interface PageResult<T> {
+  items: T[]
+  page: number
+  size: number
+  total: number
+}
+
+export function listEvents(params: { city?: string; page?: number; size?: number }) {
+  const search = new URLSearchParams()
+  if (params.city) {
+    search.set('city', params.city)
+  }
+  search.set('page', String(params.page ?? 0))
+  search.set('size', String(params.size ?? 12))
+  return request<PageResult<EventSummary>>(`/api/events?${search.toString()}`)
+}
+
+export function getEvent(id: number) {
+  return request<EventDetail>(`/api/events/${id}`)
+}

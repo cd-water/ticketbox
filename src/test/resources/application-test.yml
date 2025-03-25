@@ -1,3 +1,6 @@
 app:
   jwt:
     secret: test-only-secret-0123456789abcdef0123456789abcdef0123456789abcdef
+  admin:
+    username: admin_test
+    password: secret123

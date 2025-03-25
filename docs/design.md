@@ -22,7 +22,7 @@
        │  /api             │  /api
        └────────┬──────────┘
         ┌───────▼─────────────────────────────┐
-        │  ticketbox-app (Spring Boot, :8080) │
+        │  ticketbox-app (Spring Boot, :8888) │
         │  auth │ event │ performance │ seat  │
         │  order │ payment │ ticket │ waitingroom
         └───┬───────────┬───────────┬─────────┘
@@ -124,7 +124,7 @@ com.cdwater.ticketbox
 | 等待室 | `POST /api/performances/{id}/waiting-room/join`、`GET .../waiting-room/status` |
 | 订单 | `POST /api/orders`(Idempotency-Key)、`GET /api/orders`、`GET /api/orders/{id}`、`POST /api/orders/{id}/cancel` |
 | 支付 | `POST /api/orders/{id}/payments`、`POST /api/payments/callback`、mock 端模拟成功/超时 |
-| 管理-演出 | `POST/PUT /api/admin/events`、`POST /api/admin/files` |
+| 管理-演出 | `GET/POST /api/admin/events`、`GET/PUT /api/admin/events/{id}`、`POST /api/admin/events/{id}/publish|unpublish`、`POST /api/admin/files` |
 | 管理-场次 | `POST/PUT /api/admin/performances`、区域与座位生成、限流配置 |
 | 管理-票档 | `POST/PUT /api/admin/price-tiers` |
 | 管理-订单 | `GET /api/admin/orders`、`GET /api/admin/orders/{id}` |
@@ -142,7 +142,7 @@ frontend/
     页面：登录、演出管理、场次管理、票档管理、座位生成、订单查询、扫码核销
 ```
 
-- 开发：Vite proxy `/api` → `http://localhost:8080`。
+- 开发：Vite proxy `/api` → `http://localhost:8888`。
 - 生产：构建产物复制进 Spring `static/`，web 挂 `/`，admin 挂 `/admin/`。
 - 核销：`@zxing/browser` 摄像头扫码 + 手动输入票号兜底。
 
@@ -162,7 +162,7 @@ frontend/
 | mysql | `mysql:8.0.46` | 3306 | `ticketbox-mysql` | `mysql-data` | 用户 `ticketmysql`/`ticketmysql`，root 密码 `ticketmysql`，库 `ticketbox` |
 | redis | `redis:7.4.11` | 6379 | `ticketbox-redis` | `redis-data` | `requirepass ticketredis` |
 | minio | `quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z` | 9001(API) / 9002(控制台) | `ticketbox-minio` | `minio-data` | `ticketminio`/`ticketminio` |
-| app | 本地构建（多阶段 Dockerfile） | 8080 | `ticketbox-app` | — | 环境变量注入 |
+| app | 本地构建（多阶段 Dockerfile） | 8888 | `ticketbox-app` | — | 环境变量注入 |
 
 网络统一 `ticketbox-network`。开发时只起 mysql/redis/minio，后端 `./mvnw spring-boot:run`；生产 `docker compose up` 全量启动。
 
