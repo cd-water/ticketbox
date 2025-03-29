@@ -3,6 +3,19 @@ import { Link, useParams } from 'react-router-dom'
 import { SiteHeader } from '@/components/site-header'
 import { ApiError, getEvent, type EventDetail } from '@/lib/api'
 
+const dateTimeFormatter = new Intl.DateTimeFormat('zh-CN', {
+  month: 'long',
+  day: 'numeric',
+  weekday: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'Asia/Shanghai',
+})
+
+function formatDateTime(value: string) {
+  return dateTimeFormatter.format(new Date(value))
+}
+
 export function EventDetailPage() {
   const { id } = useParams()
   const [event, setEvent] = useState<EventDetail | null>(null)
@@ -86,9 +99,50 @@ export function EventDetailPage() {
               {event.description}
             </p>
 
-            <p className="mt-10 border-t border-border pt-6 text-sm text-muted-foreground">
-              场次与购票将在下一阶段开放。
-            </p>
+            <section className="mt-12 border-t border-border pt-8">
+              <h2 className="text-xl font-semibold tracking-tight">场次</h2>
+              {event.performances.length === 0 ? (
+                <p className="mt-4 text-sm text-muted-foreground">暂未公布场次。</p>
+              ) : (
+                <ul className="mt-2 divide-y divide-border">
+                  {event.performances.map((performance) => (
+                    <li
+                      key={performance.id}
+                      className="grid gap-4 py-6 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]"
+                    >
+                      <div>
+                        <p className="text-base font-medium">{formatDateTime(performance.startsAt)}</p>
+                        <p className="mt-1 text-sm">{performance.venueName}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{performance.venueAddress}</p>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          开票时间：{formatDateTime(performance.saleStartAt)}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap content-start gap-2 sm:justify-end">
+                        {performance.priceTiers.length === 0 ? (
+                          <span className="text-sm text-muted-foreground">票档即将公布</span>
+                        ) : (
+                          performance.priceTiers.map((tier) => (
+                            <span
+                              key={tier.id}
+                              className="inline-flex items-baseline gap-2 border border-border px-3 py-2 text-sm"
+                            >
+                              <span>{tier.name}</span>
+                              <span className="font-medium">¥{Number(tier.price).toFixed(2)}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {tier.stock > 0 ? `余票 ${tier.stock}` : '售罄'}
+                              </span>
+                            </span>
+                          ))
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <p className="mt-8 text-sm text-muted-foreground">在线购票将在后续阶段开放。</p>
+            </section>
           </article>
         )}
       </section>

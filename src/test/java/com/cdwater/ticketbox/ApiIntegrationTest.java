@@ -122,6 +122,13 @@ public abstract class ApiIntegrationTest {
         return "http://localhost:" + port;
     }
 
+    protected String adminToken() throws Exception {
+        HttpResponse<String> login = post("/api/auth/login",
+                "{\"username\":\"admin_test\",\"password\":\"secret123\"}");
+        assertThat(login.statusCode()).isEqualTo(200);
+        return tokenFrom(login.body());
+    }
+
     protected static String tokenFrom(String body) {
         Matcher matcher = Pattern.compile("\"token\"\\s*:\\s*\"([^\"]+)\"").matcher(body);
         assertThat(matcher.find()).isTrue();

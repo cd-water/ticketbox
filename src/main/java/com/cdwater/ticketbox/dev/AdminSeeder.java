@@ -1,5 +1,8 @@
-package com.cdwater.ticketbox.auth;
+package com.cdwater.ticketbox.dev;
 
+import com.cdwater.ticketbox.auth.Role;
+import com.cdwater.ticketbox.auth.UserAccount;
+import com.cdwater.ticketbox.auth.UserAccountRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -9,17 +12,17 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Profile({"dev", "test"})
-public class DevDataSeeder implements ApplicationRunner {
+public class AdminSeeder implements ApplicationRunner {
 
     private final UserAccountRepository users;
     private final PasswordEncoder passwordEncoder;
     private final String adminUsername;
     private final String adminPassword;
 
-    public DevDataSeeder(UserAccountRepository users,
-                         PasswordEncoder passwordEncoder,
-                         @Value("${app.admin.username}") String adminUsername,
-                         @Value("${app.admin.password}") String adminPassword) {
+    public AdminSeeder(UserAccountRepository users,
+                       PasswordEncoder passwordEncoder,
+                       @Value("${app.admin.username}") String adminUsername,
+                       @Value("${app.admin.password}") String adminPassword) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.adminUsername = adminUsername;

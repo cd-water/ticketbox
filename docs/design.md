@@ -60,8 +60,8 @@ com.cdwater.ticketbox
 | --- | --- | --- |
 | `user_account` | id, username UK, password_hash, role(USER/ADMIN), created_at | BCrypt |
 | `event` | id, title, description, city, cover_object_key, status(DRAFT/PUBLISHED) | 演出属于某城市 |
-| `performance` | id, event_id, starts_at, venue_name, venue_address, sale_start_at, waiting_room_enabled, admission_rate, token_ttl_seconds | 场馆为字符串 |
-| `price_tier` | id, performance_id, name, price DECIMAL(10,2), stock | stock 仅无座场次使用 |
+| `performance` | id, event_id, starts_at, venue_name, venue_address, sale_start_at, waiting_room_enabled, admission_rate, token_ttl_seconds | 场馆为字符串；等待室字段在阶段 9 增加 |
+| `price_tier` | id, performance_id, name, price DECIMAL(10,2), stock | stock 仅无座场次使用；余票展示在阶段 4 按有无 Section 区分 |
 | `section` | id, performance_id, name, price_tier_id, row_count, seats_per_row | 区域同价 |
 | `seat` | id, performance_id, section_id, row_no, seat_no, UK(performance_id, section_id, row_no, seat_no) | 出售状态不落库 |
 | `orders` | id, order_no UK, user_id, performance_id, status(PENDING_PAYMENT/PAID/CANCELLED), total_amount, idempotency_key, expires_at, created_at, paid_at, UK(user_id, idempotency_key) | 一个订单只含一个场次 |
@@ -125,7 +125,7 @@ com.cdwater.ticketbox
 | 订单 | `POST /api/orders`(Idempotency-Key)、`GET /api/orders`、`GET /api/orders/{id}`、`POST /api/orders/{id}/cancel` |
 | 支付 | `POST /api/orders/{id}/payments`、`POST /api/payments/callback`、mock 端模拟成功/超时 |
 | 管理-演出 | `GET/POST /api/admin/events`、`GET/PUT /api/admin/events/{id}`、`POST /api/admin/events/{id}/publish|unpublish`、`POST /api/admin/files` |
-| 管理-场次 | `POST/PUT /api/admin/performances`、区域与座位生成、限流配置 |
+| 管理-场次 | `GET /api/admin/performances?eventId=`、`POST/PUT /api/admin/performances`、区域与座位生成、限流配置 |
 | 管理-票档 | `POST/PUT /api/admin/price-tiers` |
 | 管理-订单 | `GET /api/admin/orders`、`GET /api/admin/orders/{id}` |
 | 管理-核销 | `POST /api/admin/tickets/check-in` |

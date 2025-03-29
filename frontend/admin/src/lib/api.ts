@@ -136,3 +136,83 @@ export function uploadFile(file: File) {
   form.append('file', file)
   return request<{ key: string }>('/api/admin/files', { method: 'POST', body: form })
 }
+
+export function getEvent(id: number) {
+  return request<AdminEvent>(`/api/admin/events/${id}`)
+}
+
+export interface PriceTier {
+  id: number
+  name: string
+  price: number
+  stock: number
+}
+
+export interface Performance {
+  id: number
+  startsAt: string
+  venueName: string
+  venueAddress: string
+  saleStartAt: string
+  priceTiers: PriceTier[]
+}
+
+export interface PerformanceInput {
+  eventId: number
+  startsAt: string
+  venueName: string
+  venueAddress: string
+  saleStartAt: string
+}
+
+export interface PriceTierInput {
+  performanceId: number
+  name: string
+  price: number
+  stock: number
+}
+
+export interface PerformanceUpdateInput {
+  startsAt: string
+  venueName: string
+  venueAddress: string
+  saleStartAt: string
+}
+
+export interface PriceTierUpdateInput {
+  name: string
+  price: number
+  stock: number
+}
+
+export function listPerformances(eventId: number) {
+  return request<Performance[]>(`/api/admin/performances?eventId=${eventId}`)
+}
+
+export function createPerformance(input: PerformanceInput) {
+  return request<Performance>('/api/admin/performances', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function updatePerformance(id: number, input: PerformanceUpdateInput) {
+  return request<Performance>(`/api/admin/performances/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
+export function createPriceTier(input: PriceTierInput) {
+  return request<PriceTier>('/api/admin/price-tiers', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function updatePriceTier(id: number, input: PriceTierUpdateInput) {
+  return request<PriceTier>(`/api/admin/price-tiers/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}

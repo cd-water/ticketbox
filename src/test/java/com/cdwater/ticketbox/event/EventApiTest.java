@@ -127,13 +127,6 @@ class EventApiTest extends ApiIntegrationTest {
                 .contains("更新后的简介");
     }
 
-    private String adminToken() throws Exception {
-        HttpResponse<String> login = post("/api/auth/login",
-                "{\"username\":\"admin_test\",\"password\":\"secret123\"}");
-        assertThat(login.statusCode()).isEqualTo(200);
-        return tokenFrom(login.body());
-    }
-
     private long createEvent(String token, String title, String city) throws Exception {
         HttpResponse<String> response = post("/api/admin/events",
                 "{\"title\":\"" + title + "\",\"description\":\"演出简介\",\"city\":\"" + city + "\"}",

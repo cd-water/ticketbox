@@ -1,7 +1,10 @@
 package com.cdwater.ticketbox.event;
 
+import com.cdwater.ticketbox.performance.PerformanceSummary;
 import com.cdwater.ticketbox.storage.StorageService;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class EventMapper {
@@ -20,13 +23,14 @@ public class EventMapper {
                 storage.presignedUrl(event.getCoverObjectKey()));
     }
 
-    public EventDetail toDetail(Event event) {
+    public EventDetail toDetail(Event event, List<PerformanceSummary> performances) {
         return new EventDetail(
                 event.getId(),
                 event.getTitle(),
                 event.getDescription(),
                 event.getCity(),
-                storage.presignedUrl(event.getCoverObjectKey()));
+                storage.presignedUrl(event.getCoverObjectKey()),
+                performances);
     }
 
     public AdminEventResponse toAdmin(Event event) {

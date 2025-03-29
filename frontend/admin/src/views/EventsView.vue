@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules, type UploadRequestOptions } from 'element-plus'
 import {
   ApiError,
@@ -13,6 +14,7 @@ import {
 } from '@/lib/api'
 
 const size = 20
+const router = useRouter()
 
 const STATUS_PRESENTATION = {
   PUBLISHED: { label: '已发布', tag: 'success', action: '下架', actionType: 'warning' },
@@ -74,6 +76,10 @@ function resetForm() {
 function openCreate() {
   resetForm()
   dialogVisible.value = true
+}
+
+function openPerformances(event: AdminEvent) {
+  router.push(`/events/${event.id}/performances`)
 }
 
 function openEdit(event: AdminEvent) {
@@ -172,6 +178,7 @@ function onPageChange(next: number) {
       </el-table-column>
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
+          <el-button text type="primary" @click="openPerformances(row)">场次</el-button>
           <el-button text type="primary" @click="openEdit(row)">编辑</el-button>
           <el-button text :type="presentation(row.status).actionType" @click="togglePublish(row)">
             {{ presentation(row.status).action }}

@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import EventsView from '@/views/EventsView.vue'
 import LoginView from '@/views/LoginView.vue'
+import PerformancesView from '@/views/PerformancesView.vue'
 import { getToken } from '@/lib/api'
 
 const router = createRouter({
@@ -15,6 +16,7 @@ const router = createRouter({
       children: [
         { path: '', redirect: '/events' },
         { path: 'events', component: EventsView },
+        { path: 'events/:eventId/performances', component: PerformancesView },
       ],
     },
     { path: '/:pathMatch(.*)*', redirect: '/events' },

@@ -93,8 +93,25 @@ export interface EventSummary {
   coverUrl: string | null
 }
 
+export interface PriceTier {
+  id: number
+  name: string
+  price: number
+  stock: number
+}
+
+export interface Performance {
+  id: number
+  startsAt: string
+  venueName: string
+  venueAddress: string
+  saleStartAt: string
+  priceTiers: PriceTier[]
+}
+
 export interface EventDetail extends EventSummary {
   description: string
+  performances: Performance[]
 }
 
 export interface PageResult<T> {

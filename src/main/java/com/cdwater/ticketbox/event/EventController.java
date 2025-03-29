@@ -2,6 +2,7 @@ package com.cdwater.ticketbox.event;
 
 import com.cdwater.ticketbox.common.PageResponse;
 import com.cdwater.ticketbox.common.Paging;
+import com.cdwater.ticketbox.performance.PerformanceService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,10 +15,12 @@ public class EventController {
 
     private final EventService eventService;
     private final EventMapper eventMapper;
+    private final PerformanceService performanceService;
 
-    public EventController(EventService eventService, EventMapper eventMapper) {
+    public EventController(EventService eventService, EventMapper eventMapper, PerformanceService performanceService) {
         this.eventService = eventService;
         this.eventMapper = eventMapper;
+        this.performanceService = performanceService;
     }
 
     @GetMapping
@@ -32,6 +35,7 @@ public class EventController {
 
     @GetMapping("/{id}")
     public EventDetail detail(@PathVariable Long id) {
-        return eventMapper.toDetail(eventService.findPublished(id));
+        Event event = eventService.findPublished(id);
+        return eventMapper.toDetail(event, performanceService.listByEvent(event.getId()));
     }
 }
