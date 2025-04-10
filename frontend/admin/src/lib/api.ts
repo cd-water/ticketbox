@@ -148,13 +148,32 @@ export interface PriceTier {
   stock: number
 }
 
+export type SeatingMode = 'SEATED' | 'GENERAL_ADMISSION'
+
 export interface Performance {
   id: number
   startsAt: string
   venueName: string
   venueAddress: string
   saleStartAt: string
+  seatingMode: SeatingMode
   priceTiers: PriceTier[]
+}
+
+export interface SectionInput {
+  name: string
+  priceTierId: number
+  rowCount: number
+  seatsPerRow: number
+}
+
+export interface SectionSummary {
+  id: number
+  name: string
+  priceTier: PriceTier
+  rowCount: number
+  seatsPerRow: number
+  seatCount: number
 }
 
 export interface PerformanceInput {
@@ -213,6 +232,17 @@ export function createPriceTier(input: PriceTierInput) {
 export function updatePriceTier(id: number, input: PriceTierUpdateInput) {
   return request<PriceTier>(`/api/admin/price-tiers/${id}`, {
     method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
+export function listSections(performanceId: number) {
+  return request<SectionSummary[]>(`/api/admin/performances/${performanceId}/sections`)
+}
+
+export function generateSection(performanceId: number, input: SectionInput) {
+  return request<SectionSummary>(`/api/admin/performances/${performanceId}/sections`, {
+    method: 'POST',
     body: JSON.stringify(input),
   })
 }

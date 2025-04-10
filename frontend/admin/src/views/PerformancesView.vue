@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import SectionsDialog from '@/components/SectionsDialog.vue'
 import {
   ApiError,
   createPerformance,
@@ -22,6 +23,8 @@ const eventId = Number(route.params.eventId)
 const event = ref<AdminEvent | null>(null)
 const performances = ref<Performance[]>([])
 const loading = ref(false)
+const seatDialogVisible = ref(false)
+const seatPerformance = ref<Performance | null>(null)
 
 const performanceDialog = ref(false)
 const performanceSaving = ref(false)
@@ -106,6 +109,11 @@ function resetPerformance() {
 function openCreatePerformance() {
   resetPerformance()
   performanceDialog.value = true
+}
+
+function openSections(performance: Performance) {
+  seatPerformance.value = performance
+  seatDialogVisible.value = true
 }
 
 function openEditPerformance(performance: Performance) {
@@ -226,7 +234,12 @@ async function saveTier() {
               <el-table-column label="价格" width="120">
                 <template #default="{ row: tier }">¥{{ Number(tier.price).toFixed(2) }}</template>
               </el-table-column>
-              <el-table-column prop="stock" label="库存" width="100" />
+              <el-table-column label="库存" width="100">
+                <template #default="{ row: tier }">
+                  <span v-if="performance.seatingMode === 'GENERAL_ADMISSION'">{{ tier.stock }}</span>
+                  <span v-else class="muted">—</span>
+                </template>
+              </el-table-column>
               <el-table-column label="操作" width="100">
                 <template #default="{ row: tier }">
                   <el-button text type="primary" @click="openEditTier(performance.id, tier)">
@@ -248,11 +261,17 @@ async function saveTier() {
       <el-table-column label="开票时间" min-width="170">
         <template #default="{ row }">{{ formatDateTime(row.saleStartAt) }}</template>
       </el-table-column>
+      <el-table-column label="类型" width="110">
+        <template #default="{ row }">
+          {{ row.seatingMode === 'SEATED' ? '对号入座' : '无座' }}
+        </template>
+      </el-table-column>
       <el-table-column label="票档数" width="90">
         <template #default="{ row }">{{ row.priceTiers.length }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="100" fixed="right">
+      <el-table-column label="操作" width="150" fixed="right">
         <template #default="{ row }">
+          <el-button text type="primary" @click="openSections(row)">座位</el-button>
           <el-button text type="primary" @click="openEditPerformance(row)">编辑</el-button>
         </template>
       </el-table-column>
@@ -286,6 +305,8 @@ async function saveTier() {
         <el-button type="primary" :loading="performanceSaving" @click="savePerformance">保存</el-button>
       </template>
     </el-dialog>
+
+    <SectionsDialog v-model="seatDialogVisible" :performance="seatPerformance" @updated="load" />
 
     <el-dialog
       v-model="tierDialog"
@@ -365,6 +386,10 @@ h1 {
 
 .empty {
   font-size: 13px;
+  color: var(--el-text-color-secondary);
+}
+
+.muted {
   color: var(--el-text-color-secondary);
 }
 </style>

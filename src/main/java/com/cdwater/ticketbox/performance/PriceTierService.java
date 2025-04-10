@@ -5,6 +5,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 public class PriceTierService {
 
@@ -35,6 +37,13 @@ public class PriceTierService {
                 command.price(),
                 command.stock());
         return tier;
+    }
+
+    @Transactional(readOnly = true)
+    public List<PriceTierView> listViews(Long performanceId) {
+        return priceTiers.findByPerformanceIdOrderByPriceAsc(performanceId).stream()
+                .map(PriceTierView::from)
+                .toList();
     }
 
     private void requirePerformance(Long performanceId) {

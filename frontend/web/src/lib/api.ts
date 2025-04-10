@@ -100,12 +100,39 @@ export interface PriceTier {
   stock: number
 }
 
+export type SeatingMode = 'SEATED' | 'GENERAL_ADMISSION'
+
 export interface Performance {
   id: number
   startsAt: string
   venueName: string
   venueAddress: string
   saleStartAt: string
+  seatingMode: SeatingMode
+  priceTiers: PriceTier[]
+}
+
+export interface SeatView {
+  id: number
+  rowNo: number
+  seatNo: number
+  status: 'AVAILABLE'
+}
+
+export interface SeatMapSection {
+  id: number
+  name: string
+  priceTier: PriceTier
+  rowCount: number
+  seatsPerRow: number
+  seats: SeatView[]
+}
+
+export interface SeatMap {
+  eventId: number
+  performanceId: number
+  seatingMode: SeatingMode
+  sections: SeatMapSection[]
   priceTiers: PriceTier[]
 }
 
@@ -133,4 +160,8 @@ export function listEvents(params: { city?: string; page?: number; size?: number
 
 export function getEvent(id: number) {
   return request<EventDetail>(`/api/events/${id}`)
+}
+
+export function getSeatMap(performanceId: number) {
+  return request<SeatMap>(`/api/performances/${performanceId}/seat-map`)
 }

@@ -12,14 +12,17 @@ import java.util.List;
 public class PerformanceService {
 
     private final PerformanceRepository performances;
-    private final PriceTierRepository priceTiers;
+    private final PriceTierService priceTierService;
+    private final SectionRepository sections;
     private final EventRepository events;
 
     public PerformanceService(PerformanceRepository performances,
-                              PriceTierRepository priceTiers,
+                              PriceTierService priceTierService,
+                              SectionRepository sections,
                               EventRepository events) {
         this.performances = performances;
-        this.priceTiers = priceTiers;
+        this.priceTierService = priceTierService;
+        this.sections = sections;
         this.events = events;
     }
 
@@ -58,15 +61,17 @@ public class PerformanceService {
     }
 
     public PerformanceSummary toSummary(Performance performance) {
-        List<PriceTierView> tiers = priceTiers.findByPerformanceIdOrderByPriceAsc(performance.getId()).stream()
-                .map(PriceTierView::from)
-                .toList();
+        List<PriceTierView> tiers = priceTierService.listViews(performance.getId());
+        SeatingMode seatingMode = sections.existsByPerformanceId(performance.getId())
+                ? SeatingMode.SEATED
+                : SeatingMode.GENERAL_ADMISSION;
         return new PerformanceSummary(
                 performance.getId(),
                 performance.getStartsAt(),
                 performance.getVenueName(),
                 performance.getVenueAddress(),
                 performance.getSaleStartAt(),
+                seatingMode,
                 tiers);
     }
 

@@ -9,5 +9,6 @@ public record PerformanceSummary(
         String venueName,
         String venueAddress,
         Instant saleStartAt,
+        SeatingMode seatingMode,
         List<PriceTierView> priceTiers) {
 }

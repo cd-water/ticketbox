@@ -118,22 +118,34 @@ export function EventDetailPage() {
                           开票时间：{formatDateTime(performance.saleStartAt)}
                         </p>
                       </div>
-                      <div className="flex flex-wrap content-start gap-2 sm:justify-end">
-                        {performance.priceTiers.length === 0 ? (
-                          <span className="text-sm text-muted-foreground">票档即将公布</span>
-                        ) : (
-                          performance.priceTiers.map((tier) => (
-                            <span
-                              key={tier.id}
-                              className="inline-flex items-baseline gap-2 border border-border px-3 py-2 text-sm"
-                            >
-                              <span>{tier.name}</span>
-                              <span className="font-medium">¥{Number(tier.price).toFixed(2)}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {tier.stock > 0 ? `余票 ${tier.stock}` : '售罄'}
+                      <div className="flex flex-col items-start gap-3 sm:items-end">
+                        <div className="flex flex-wrap gap-2 sm:justify-end">
+                          {performance.priceTiers.length === 0 ? (
+                            <span className="text-sm text-muted-foreground">票档即将公布</span>
+                          ) : (
+                            performance.priceTiers.map((tier) => (
+                              <span
+                                key={tier.id}
+                                className="inline-flex items-baseline gap-2 border border-border px-3 py-2 text-sm"
+                              >
+                                <span>{tier.name}</span>
+                                <span className="font-medium">¥{Number(tier.price).toFixed(2)}</span>
+                                {performance.seatingMode === 'GENERAL_ADMISSION' && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {tier.stock > 0 ? `余票 ${tier.stock}` : '售罄'}
+                                  </span>
+                                )}
                               </span>
-                            </span>
-                          ))
+                            ))
+                          )}
+                        </div>
+                        {performance.seatingMode === 'SEATED' && (
+                          <Link
+                            to={`/performances/${performance.id}/seats`}
+                            className="text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                          >
+                            查看座位图
+                          </Link>
                         )}
                       </div>
                     </li>
