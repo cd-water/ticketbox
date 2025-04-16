@@ -34,6 +34,12 @@ export function SiteHeader() {
         <nav className="flex items-center gap-4 text-sm">
           {profile ? (
             <>
+              <Link
+                to="/orders"
+                className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                我的订单
+              </Link>
               <span className="text-muted-foreground">{profile.username}</span>
               <Button variant="ghost" size="sm" onClick={signOut}>
                 退出登录

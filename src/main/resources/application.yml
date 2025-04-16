@@ -33,3 +33,6 @@ app:
     access-key: ${MINIO_ACCESS_KEY}
     secret-key: ${MINIO_SECRET_KEY}
     bucket: ${MINIO_BUCKET:ticketbox}
+  order:
+    expiry: ${ORDER_EXPIRY:15m}
+    sweep-interval: ${ORDER_SWEEP_INTERVAL:60000}

@@ -13,10 +13,12 @@ import com.cdwater.ticketbox.performance.Section;
 import com.cdwater.ticketbox.performance.SectionRepository;
 import com.cdwater.ticketbox.performance.Seat;
 import com.cdwater.ticketbox.performance.SeatRepository;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -30,17 +32,20 @@ public class SeatMapService {
     private final PriceTierService priceTierService;
     private final SectionRepository sections;
     private final SeatRepository seats;
+    private final StringRedisTemplate redis;
 
     public SeatMapService(PerformanceRepository performances,
                           EventRepository events,
                           PriceTierService priceTierService,
                           SectionRepository sections,
-                          SeatRepository seats) {
+                          SeatRepository seats,
+                          StringRedisTemplate redis) {
         this.performances = performances;
         this.events = events;
         this.priceTierService = priceTierService;
         this.sections = sections;
         this.seats = seats;
+        this.redis = redis;
     }
 
     @Transactional(readOnly = true)
@@ -61,8 +66,9 @@ public class SeatMapService {
 
         Map<Long, PriceTierView> tierById = tiers.stream()
                 .collect(Collectors.toMap(PriceTierView::id, Function.identity()));
-        Map<Long, List<Seat>> seatsBySection = seats
-                .findByPerformanceIdOrderBySectionIdAscRowNoAscSeatNoAsc(performanceId).stream()
+        List<Seat> allSeats = seats.findByPerformanceIdOrderBySectionIdAscRowNoAscSeatNoAsc(performanceId);
+        Map<Long, SeatStatus> statusById = lockStatuses(performanceId, allSeats);
+        Map<Long, List<Seat>> seatsBySection = allSeats.stream()
                 .collect(Collectors.groupingBy(Seat::getSectionId));
 
         List<SectionView> sectionViews = sectionList.stream()
@@ -74,11 +80,30 @@ public class SeatMapService {
                         section.getSeatsPerRow(),
                         seatsBySection.getOrDefault(section.getId(), List.of()).stream()
                                 .map(seat -> new SeatView(
-                                        seat.getId(), seat.getRowNo(), seat.getSeatNo(), SeatStatus.AVAILABLE))
+                                        seat.getId(),
+                                        seat.getRowNo(),
+                                        seat.getSeatNo(),
+                                        statusById.getOrDefault(seat.getId(), SeatStatus.AVAILABLE)))
                                 .toList()))
                 .toList();
 
         return new SeatMapResponse(event.getId(), performanceId, SeatingMode.SEATED, sectionViews, tiers);
+    }
+
+    private Map<Long, SeatStatus> lockStatuses(Long performanceId, List<Seat> allSeats) {
+        Map<Long, SeatStatus> statuses = new HashMap<>(allSeats.size());
+        if (allSeats.isEmpty()) {
+            return statuses;
+        }
+        List<String> keys = allSeats.stream()
+                .map(seat -> SeatLockKeys.of(performanceId, seat.getId()))
+                .toList();
+        List<String> values = redis.opsForValue().multiGet(keys);
+        for (int index = 0; index < allSeats.size(); index++) {
+            boolean locked = values != null && values.get(index) != null;
+            statuses.put(allSeats.get(index).getId(), locked ? SeatStatus.LOCKED : SeatStatus.AVAILABLE);
+        }
+        return statuses;
     }
 
     private static ApiException notFound() {

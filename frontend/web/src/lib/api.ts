@@ -165,3 +165,48 @@ export function getEvent(id: number) {
 export function getSeatMap(performanceId: number) {
   return request<SeatMap>(`/api/performances/${performanceId}/seat-map`)
 }
+
+export type OrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'CANCELLED'
+
+export interface OrderItem {
+  seatId: number | null
+  rowNo: number | null
+  seatNo: number | null
+  sectionName: string | null
+  tierName: string | null
+  unitPrice: number
+}
+
+export interface Order {
+  id: number
+  orderNo: string
+  status: OrderStatus
+  totalAmount: number
+  expiresAt: string
+  createdAt: string
+  eventId: number | null
+  eventTitle: string | null
+  startsAt: string | null
+  venueName: string | null
+  items: OrderItem[]
+}
+
+export function createOrder(performanceId: number, seatIds: number[], idempotencyKey: string) {
+  return request<Order>('/api/orders', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify({ performanceId, seatIds }),
+  })
+}
+
+export function listOrders(page = 0, size = 20) {
+  return request<PageResult<Order>>(`/api/orders?page=${page}&size=${size}`)
+}
+
+export function getOrder(id: number) {
+  return request<Order>(`/api/orders/${id}`)
+}
+
+export function cancelOrder(id: number) {
+  return request<Order>(`/api/orders/${id}/cancel`, { method: 'POST' })
+}

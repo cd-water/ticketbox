@@ -2,19 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { SiteHeader } from '@/components/site-header'
 import { ApiError, getEvent, type EventDetail } from '@/lib/api'
-
-const dateTimeFormatter = new Intl.DateTimeFormat('zh-CN', {
-  month: 'long',
-  day: 'numeric',
-  weekday: 'short',
-  hour: '2-digit',
-  minute: '2-digit',
-  timeZone: 'Asia/Shanghai',
-})
-
-function formatDateTime(value: string) {
-  return dateTimeFormatter.format(new Date(value))
-}
+import { formatDateTime } from '@/lib/format'
 
 export function EventDetailPage() {
   const { id } = useParams()

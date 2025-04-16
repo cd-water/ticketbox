@@ -81,6 +81,15 @@ public abstract class ApiIntegrationTest {
         return send(request, token);
     }
 
+    protected HttpResponse<String> post(String path, String body, String token,
+                                        java.util.Map<String, String> headers) throws Exception {
+        HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(baseUrl() + path))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body));
+        headers.forEach(request::header);
+        return send(request, token);
+    }
+
     protected HttpResponse<String> put(String path, String body, String token) throws Exception {
         HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(baseUrl() + path))
                 .header("Content-Type", "application/json")

@@ -1,17 +1,56 @@
-import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { SiteHeader } from '@/components/site-header'
-import { ApiError, getSeatMap, type SeatMap, type SeatView } from '@/lib/api'
+import { Button } from '@/components/ui/button'
+import {
+  ApiError,
+  createOrder,
+  getSeatMap,
+  getToken,
+  type SeatMap,
+  type SeatView,
+} from '@/lib/api'
+
+const MAX_SEATS_PER_ORDER = 4
 
 export function SeatMapPage() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [seatMap, setSeatMap] = useState<SeatMap | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [submitting, setSubmitting] = useState(false)
+
+  const performanceId = Number(id)
+  const loggedIn = Boolean(getToken())
+  const selectionKey = `ticketbox.selection.${performanceId}`
+
+  function restoreSelection(loaded: SeatMap) {
+    const saved = sessionStorage.getItem(selectionKey)
+    if (!saved) {
+      setSelected(new Set())
+      return
+    }
+    sessionStorage.removeItem(selectionKey)
+    try {
+      const ids: number[] = JSON.parse(saved)
+      const available = new Set<number>()
+      for (const section of loaded.sections) {
+        for (const seat of section.seats) {
+          if (seat.status === 'AVAILABLE') {
+            available.add(seat.id)
+          }
+        }
+      }
+      setSelected(new Set(ids.filter((seatId) => available.has(seatId))))
+    } catch {
+      setSelected(new Set())
+    }
+  }
 
   useEffect(() => {
     let active = true
-    const performanceId = Number(id)
     if (!Number.isInteger(performanceId) || performanceId <= 0) {
       setError('场次不存在或尚未发布。')
       setLoading(false)
@@ -22,6 +61,7 @@ export function SeatMapPage() {
       .then((loaded) => {
         if (active) {
           setSeatMap(loaded)
+          restoreSelection(loaded)
         }
       })
       .catch((caught) => {
@@ -41,7 +81,67 @@ export function SeatMapPage() {
     return () => {
       active = false
     }
-  }, [id])
+  }, [performanceId])
+
+  const seatInfo = useMemo(() => {
+    const info = new Map<number, { price: number; label: string }>()
+    for (const section of seatMap?.sections ?? []) {
+      for (const seat of section.seats) {
+        info.set(seat.id, {
+          price: Number(section.priceTier.price),
+          label: `${section.name} ${seat.rowNo}排${seat.seatNo}号`,
+        })
+      }
+    }
+    return info
+  }, [seatMap])
+
+  const total = [...selected].reduce((sum, seatId) => sum + (seatInfo.get(seatId)?.price ?? 0), 0)
+
+  function toggleSeat(seat: SeatView) {
+    if (seat.status !== 'AVAILABLE') {
+      return
+    }
+    setError(null)
+    setSelected((current) => {
+      const next = new Set(current)
+      if (next.has(seat.id)) {
+        next.delete(seat.id)
+        return next
+      }
+      if (next.size >= MAX_SEATS_PER_ORDER) {
+        setError(`每单最多选择 ${MAX_SEATS_PER_ORDER} 个座位。`)
+        return current
+      }
+      next.add(seat.id)
+      return next
+    })
+  }
+
+  async function submit() {
+    if (!loggedIn) {
+      sessionStorage.setItem(selectionKey, JSON.stringify([...selected]))
+      navigate('/login', { state: { from: `/performances/${performanceId}/seats` } })
+      return
+    }
+    if (selected.size === 0) {
+      return
+    }
+    setSubmitting(true)
+    setError(null)
+    try {
+      const order = await createOrder(performanceId, [...selected], crypto.randomUUID())
+      navigate(`/orders/${order.id}`)
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : '提交订单失败，请稍后重试。')
+      if (caught instanceof ApiError && caught.code === 'SEAT_ALREADY_LOCKED') {
+        setSelected(new Set())
+        getSeatMap(performanceId).then(setSeatMap).catch(() => undefined)
+      }
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <main className="min-h-svh bg-background text-foreground">
@@ -60,10 +160,12 @@ export function SeatMapPage() {
             <div className="h-6 w-1/3 rounded bg-secondary" />
             <div className="h-40 rounded bg-secondary" />
           </div>
-        ) : error || !seatMap ? (
+        ) : error && !seatMap ? (
           <p role="alert" className="mt-10 text-sm text-destructive">
-            {error ?? '场次不存在或尚未发布。'}
+            {error}
           </p>
+        ) : !seatMap ? (
+          <p className="mt-10 text-sm text-muted-foreground">场次不存在或尚未发布。</p>
         ) : (
           <div className="mt-8">
             <h1 className="text-2xl font-semibold tracking-tight">座位图</h1>
@@ -84,51 +186,99 @@ export function SeatMapPage() {
                     </li>
                   ))}
                 </ul>
+                <p className="mt-8 text-sm text-muted-foreground">无座购票将在后续阶段开放。</p>
               </>
             ) : (
-              <div className="mt-6 space-y-12">
-                {seatMap.sections.map((section) => (
-                  <section key={section.id}>
-                    <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-3">
-                      <h2 className="text-lg font-semibold tracking-tight">{section.name}</h2>
-                      <p className="text-sm text-muted-foreground">
-                        {section.priceTier.name} · ¥{Number(section.priceTier.price).toFixed(2)}
-                      </p>
-                    </div>
+              <>
+                {error && (
+                  <p role="alert" className="mt-6 text-sm text-destructive">
+                    {error}
+                  </p>
+                )}
 
-                    <div className="mt-6 overflow-x-auto pb-2">
-                      <div className="min-w-max space-y-1.5">
-                        {groupByRow(section.seats).map((row) => (
-                          <div key={row.rowNo} className="flex items-center gap-2">
-                            <span className="w-9 text-right text-xs text-muted-foreground">
-                              {row.rowNo}排
-                            </span>
-                            <div
-                              className="grid gap-1.5"
-                              style={{ gridTemplateColumns: `repeat(${section.seatsPerRow}, 1.5rem)` }}
-                            >
-                              {row.seats.map((seat) => (
-                                <span
-                                  key={seat.id}
-                                  role="img"
-                                  aria-label={`${row.rowNo}排${seat.seatNo}号`}
-                                  title={`${row.rowNo}排${seat.seatNo}号`}
-                                  className="h-6 w-6 rounded-[3px] border border-border bg-secondary"
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        ))}
+                {!loggedIn && (
+                  <p className="mt-4 border border-border bg-secondary px-3 py-2 text-sm">
+                    <Link to="/login" state={{ from: `/performances/${performanceId}/seats` }} className="font-medium underline underline-offset-4">
+                      登录
+                    </Link>{' '}
+                    后即可提交订单；已选座位会保留。
+                  </p>
+                )}
+
+                <div className="mt-6 space-y-12">
+                  {seatMap.sections.map((section) => (
+                    <section key={section.id}>
+                      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-3">
+                        <h2 className="text-lg font-semibold tracking-tight">{section.name}</h2>
+                        <p className="text-sm text-muted-foreground">
+                          {section.priceTier.name} · ¥{Number(section.priceTier.price).toFixed(2)}
+                        </p>
                       </div>
-                    </div>
-                  </section>
-                ))}
-              </div>
-            )}
 
-            <p className="mt-12 border-t border-border pt-6 text-sm text-muted-foreground">
-              在线选座与购票将在后续阶段开放。
-            </p>
+                      <div className="mt-6 overflow-x-auto pb-2">
+                        <div className="min-w-max space-y-1.5">
+                          {groupByRow(section.seats).map((row) => (
+                            <div key={row.rowNo} className="flex items-center gap-2">
+                              <span className="w-9 text-right text-xs text-muted-foreground">
+                                {row.rowNo}排
+                              </span>
+                              <div
+                                className="grid gap-1.5"
+                                style={{ gridTemplateColumns: `repeat(${section.seatsPerRow}, 1.75rem)` }}
+                              >
+                                {row.seats.map((seat) => {
+                                  const isSelected = selected.has(seat.id)
+                                  const locked = seat.status !== 'AVAILABLE'
+                                  return (
+                                    <button
+                                      key={seat.id}
+                                      type="button"
+                                      disabled={locked || submitting}
+                                      aria-pressed={isSelected}
+                                      aria-label={`${row.rowNo}排${seat.seatNo}号${locked ? '，已锁定' : ''}`}
+                                      title={
+                                        locked
+                                          ? `${row.rowNo}排${seat.seatNo}号 · 已锁定`
+                                          : `${row.rowNo}排${seat.seatNo}号`
+                                      }
+                                      onClick={() => toggleSeat(seat)}
+                                      className={[
+                                        'flex h-7 w-7 items-center justify-center rounded-[3px] border text-[10px] transition-colors',
+                                        locked
+                                          ? 'cursor-not-allowed border-border bg-muted text-muted-foreground/40'
+                                          : isSelected
+                                            ? 'border-primary bg-primary text-primary-foreground'
+                                            : 'border-border bg-secondary hover:bg-accent',
+                                      ].join(' ')}
+                                    >
+                                      {seat.seatNo}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </section>
+                  ))}
+                </div>
+
+                <div className="sticky bottom-4 mt-10 flex flex-wrap items-center justify-between gap-4 border border-border bg-card px-4 py-3 shadow-sm">
+                  <div className="text-sm">
+                    <span className="font-medium">已选 {selected.size} / {MAX_SEATS_PER_ORDER} 张</span>
+                    <span className="ml-4 text-muted-foreground">合计 ¥{total.toFixed(2)}</span>
+                  </div>
+                  <Button onClick={submit} disabled={selected.size === 0 || submitting}>
+                    {submitting ? '提交中…' : '提交订单'}
+                  </Button>
+                </div>
+
+                <p className="mt-6 text-sm text-muted-foreground">
+                  提交订单后将保留座位 15 分钟；支付将在下一阶段接入。
+                </p>
+              </>
+            )}
           </div>
         )}
       </section>

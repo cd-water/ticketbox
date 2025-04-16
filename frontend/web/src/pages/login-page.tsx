@@ -11,6 +11,7 @@ export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const registered = Boolean((location.state as { registered?: boolean } | null)?.registered)
+  const from = (location.state as { from?: string } | null)?.from ?? '/'
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -24,7 +25,7 @@ export function LoginPage() {
     try {
       const result = await login(username.trim(), password)
       setToken(result.token)
-      navigate('/', { replace: true })
+      navigate(from, { replace: true })
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : '登录失败，请稍后重试')
     } finally {
