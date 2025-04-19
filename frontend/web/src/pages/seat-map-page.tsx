@@ -205,6 +205,21 @@ export function SeatMapPage() {
                   </p>
                 )}
 
+                <div className="mt-6 flex flex-wrap items-center gap-5 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-3.5 w-3.5 rounded-[2px] border border-border bg-secondary" />
+                    可售
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-3.5 w-3.5 rounded-[2px] border border-dashed border-muted-foreground/40 bg-muted" />
+                    已锁定
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-3.5 w-3.5 rounded-[2px] border border-border bg-foreground/15" />
+                    已售
+                  </span>
+                </div>
+
                 <div className="mt-6 space-y-12">
                   {seatMap.sections.map((section) => (
                     <section key={section.id}>
@@ -228,27 +243,29 @@ export function SeatMapPage() {
                               >
                                 {row.seats.map((seat) => {
                                   const isSelected = selected.has(seat.id)
-                                  const locked = seat.status !== 'AVAILABLE'
+                                  const unavailable = seat.status !== 'AVAILABLE'
+                                  const stateLabel =
+                                    seat.status === 'SOLD' ? '已售' : seat.status === 'LOCKED' ? '已锁定' : ''
+                                  const appearance =
+                                    seat.status === 'SOLD'
+                                      ? 'cursor-not-allowed border-border bg-foreground/15 text-foreground/30 line-through'
+                                      : seat.status === 'LOCKED'
+                                        ? 'cursor-not-allowed border-dashed border-muted-foreground/40 bg-muted text-muted-foreground/40'
+                                        : isSelected
+                                          ? 'border-primary bg-primary text-primary-foreground'
+                                          : 'border-border bg-secondary hover:bg-accent'
                                   return (
                                     <button
                                       key={seat.id}
                                       type="button"
-                                      disabled={locked || submitting}
+                                      disabled={unavailable || submitting}
                                       aria-pressed={isSelected}
-                                      aria-label={`${row.rowNo}排${seat.seatNo}号${locked ? '，已锁定' : ''}`}
-                                      title={
-                                        locked
-                                          ? `${row.rowNo}排${seat.seatNo}号 · 已锁定`
-                                          : `${row.rowNo}排${seat.seatNo}号`
-                                      }
+                                      aria-label={`${row.rowNo}排${seat.seatNo}号${stateLabel ? `，${stateLabel}` : ''}`}
+                                      title={`${row.rowNo}排${seat.seatNo}号${stateLabel ? ` · ${stateLabel}` : ''}`}
                                       onClick={() => toggleSeat(seat)}
                                       className={[
                                         'flex h-7 w-7 items-center justify-center rounded-[3px] border text-[10px] transition-colors',
-                                        locked
-                                          ? 'cursor-not-allowed border-border bg-muted text-muted-foreground/40'
-                                          : isSelected
-                                            ? 'border-primary bg-primary text-primary-foreground'
-                                            : 'border-border bg-secondary hover:bg-accent',
+                                        appearance,
                                       ].join(' ')}
                                     >
                                       {seat.seatNo}

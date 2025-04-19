@@ -1,9 +1,20 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { QRCodeSVG } from 'qrcode.react'
 import { OrderStatusBadge } from '@/components/order-status-badge'
 import { SiteHeader } from '@/components/site-header'
 import { Button } from '@/components/ui/button'
-import { ApiError, cancelOrder, getOrder, type Order } from '@/lib/api'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  ApiError,
+  cancelOrder,
+  createPayment,
+  getOrder,
+  type AttendeeInput,
+  type Order,
+  type OrderItem,
+} from '@/lib/api'
 import { formatDateTime } from '@/lib/format'
 
 export function OrderDetailPage() {
@@ -13,6 +24,12 @@ export function OrderDetailPage() {
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
   const [confirmingCancel, setConfirmingCancel] = useState(false)
+  const [paying, setPaying] = useState(false)
+  const [attendees, setAttendees] = useState<Record<number, { name: string; idNo: string }>>({})
+
+  const seatItems: (OrderItem & { seatId: number })[] = order
+    ? order.items.filter((item): item is OrderItem & { seatId: number } => item.seatId !== null)
+    : []
 
   useEffect(() => {
     let active = true
@@ -25,9 +42,19 @@ export function OrderDetailPage() {
     setLoading(true)
     getOrder(orderId)
       .then((loaded) => {
-        if (active) {
-          setOrder(loaded)
+        if (!active) {
+          return
         }
+        setOrder(loaded)
+        setAttendees((current) => {
+          const next = { ...current }
+          for (const item of loaded.items) {
+            if (item.seatId !== null && !next[item.seatId]) {
+              next[item.seatId] = { name: '', idNo: '' }
+            }
+          }
+          return next
+        })
       })
       .catch((caught) => {
         if (active) {
@@ -63,6 +90,51 @@ export function OrderDetailPage() {
     } finally {
       setCancelling(false)
     }
+  }
+
+  async function submitPayment() {
+    if (!order) {
+      return
+    }
+    const list: AttendeeInput[] = []
+    for (const item of seatItems) {
+      const attendee = attendees[item.seatId]
+      if (!attendee?.name.trim() || !attendee?.idNo.trim()) {
+        setError('请填写每位观演人的姓名与证件号。')
+        return
+      }
+      list.push({ seatId: item.seatId, name: attendee.name.trim(), idNo: attendee.idNo.trim() })
+    }
+    if (list.length === 0) {
+      setError('订单没有可支付的座位。')
+      return
+    }
+
+    setPaying(true)
+    setError(null)
+    try {
+      await createPayment(order.id, list)
+      for (let attempt = 0; attempt < 15; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        const updated = await getOrder(order.id)
+        setOrder(updated)
+        if (updated.status === 'PAID') {
+          return
+        }
+      }
+      setError('支付处理中，请稍后刷新订单查看电子票。')
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : '发起支付失败，请稍后重试。')
+    } finally {
+      setPaying(false)
+    }
+  }
+
+  function updateAttendee(seatId: number, field: 'name' | 'idNo', value: string) {
+    setAttendees((current) => ({
+      ...current,
+      [seatId]: { ...current[seatId], [field]: value },
+    }))
   }
 
   return (
@@ -103,7 +175,7 @@ export function OrderDetailPage() {
 
             {order.status === 'PENDING_PAYMENT' && (
               <p className="mt-6 border border-primary/25 bg-primary/5 px-3 py-2 text-sm">
-                请在 {formatDateTime(order.expiresAt)} 前完成支付，超时订单将自动取消。支付功能将在下一阶段接入。
+                请在 {formatDateTime(order.expiresAt)} 前完成支付，超时订单将自动取消。
               </p>
             )}
 
@@ -116,7 +188,10 @@ export function OrderDetailPage() {
             <div className="mt-8 border-y border-border">
               <ul className="divide-y divide-border">
                 {order.items.map((item) => (
-                  <li key={item.seatId ?? item.tierName} className="flex items-baseline justify-between gap-4 py-3 text-sm">
+                  <li
+                    key={item.seatId ?? item.tierName}
+                    className="flex items-baseline justify-between gap-4 py-3 text-sm"
+                  >
                     <span>
                       {item.sectionName ?? '座位'} {item.rowNo ?? ''}排{item.seatNo ?? ''}号
                       <span className="ml-2 text-muted-foreground">{item.tierName}</span>
@@ -143,23 +218,110 @@ export function OrderDetailPage() {
             </dl>
 
             {order.status === 'PENDING_PAYMENT' && (
-              <div className="mt-8">
-                {confirmingCancel ? (
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="text-sm">确认取消这笔订单？座位会立即释放。</span>
-                    <Button variant="destructive" size="sm" disabled={cancelling} onClick={confirmCancel}>
-                      {cancelling ? '取消中…' : '确认取消'}
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setConfirmingCancel(false)}>
-                      返回
-                    </Button>
-                  </div>
-                ) : (
-                  <Button variant="outline" onClick={() => setConfirmingCancel(true)}>
-                    取消订单
+              <section className="mt-10 border-t border-border pt-6">
+                <h2 className="text-lg font-semibold tracking-tight">观演人信息</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  每张票对应一位观演人，请填写姓名与证件号后再支付。
+                </p>
+
+                <div className="mt-5 space-y-5">
+                  {seatItems.map((item) => (
+                    <div key={item.seatId} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+                      <div>
+                        <p className="text-sm font-medium">
+                          {item.sectionName} {item.rowNo}排{item.seatNo}号
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {item.tierName} · ¥{Number(item.unitPrice).toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-1">
+                          <Label htmlFor={`name-${item.seatId}`} className="text-xs">
+                            姓名
+                          </Label>
+                          <Input
+                            id={`name-${item.seatId}`}
+                            value={attendees[item.seatId]?.name ?? ''}
+                            maxLength={64}
+                            onChange={(event) => updateAttendee(item.seatId, 'name', event.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor={`id-${item.seatId}`} className="text-xs">
+                            证件号
+                          </Label>
+                          <Input
+                            id={`id-${item.seatId}`}
+                            value={attendees[item.seatId]?.idNo ?? ''}
+                            maxLength={64}
+                            onChange={(event) => updateAttendee(item.seatId, 'idNo', event.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <Button onClick={submitPayment} disabled={paying || cancelling}>
+                    {paying ? '支付处理中…' : `支付 ¥${Number(order.totalAmount).toFixed(2)}`}
                   </Button>
+                  <span className="text-xs text-muted-foreground">模拟支付，回调成功后自动出票。</span>
+                </div>
+
+                <div className="mt-8 border-t border-border pt-6">
+                  {confirmingCancel ? (
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-sm">确认取消这笔订单？座位会立即释放。</span>
+                      <Button variant="destructive" size="sm" disabled={cancelling || paying} onClick={confirmCancel}>
+                        {cancelling ? '取消中…' : '确认取消'}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setConfirmingCancel(false)}>
+                        返回
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button variant="outline" disabled={paying} onClick={() => setConfirmingCancel(true)}>
+                      取消订单
+                    </Button>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {order.status === 'PAID' && (
+              <section className="mt-10 border-t border-border pt-6">
+                <h2 className="text-xl font-semibold tracking-tight">电子票</h2>
+                <p className="mt-1 text-sm text-muted-foreground">入场时出示二维码，一人一票。</p>
+
+                {order.tickets.length === 0 ? (
+                  <p className="mt-4 text-sm text-muted-foreground">电子票正在生成，请刷新页面。</p>
+                ) : (
+                  <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                    {order.tickets.map((ticket) => (
+                      <div key={ticket.id} className="flex gap-4 border border-border bg-card p-4">
+                        <QRCodeSVG
+                          value={ticket.qrPayload}
+                          size={112}
+                          bgColor="#fffdf9"
+                          fgColor="#1c1917"
+                          level="M"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">{ticket.attendeeName}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {ticket.sectionName} {ticket.rowNo}排{ticket.seatNo}号
+                          </p>
+                          <p className="mt-3 text-xs text-muted-foreground">
+                            {ticket.status === 'ISSUED' ? '待入场' : '已核销'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
-              </div>
+              </section>
             )}
 
             {order.status === 'CANCELLED' && (

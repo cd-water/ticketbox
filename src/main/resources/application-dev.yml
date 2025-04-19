@@ -9,3 +9,8 @@ app:
     access-key: ${MINIO_ACCESS_KEY:ticketminio}
     secret-key: ${MINIO_SECRET_KEY:ticketminio}
     bucket: ${MINIO_BUCKET:ticketbox}
+  payment:
+    callback-secret: ${PAYMENT_CALLBACK_SECRET:dev-callback-secret-change-me-0123456789abcdef}
+    callback-delay: ${PAYMENT_CALLBACK_DELAY:300ms}
+  ticket:
+    qr-secret: ${TICKET_QR_SECRET:dev-qr-secret-change-me-0123456789abcdef}

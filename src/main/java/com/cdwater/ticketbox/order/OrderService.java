@@ -14,6 +14,9 @@ import com.cdwater.ticketbox.performance.Seat;
 import com.cdwater.ticketbox.performance.SeatRepository;
 import com.cdwater.ticketbox.performance.Section;
 import com.cdwater.ticketbox.performance.SectionRepository;
+import com.cdwater.ticketbox.payment.PaymentRepository;
+import com.cdwater.ticketbox.payment.PaymentStatus;
+import com.cdwater.ticketbox.ticket.TicketService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -53,6 +56,8 @@ public class OrderService {
     private final SeatLockService seatLocks;
     private final IdempotencyLockService idempotencyLocks;
     private final OrderWriter orderWriter;
+    private final TicketService ticketService;
+    private final PaymentRepository payments;
 
     public OrderService(UserAccountRepository users,
                         OrderRepository orders,
@@ -64,7 +69,9 @@ public class OrderService {
                         PriceTierRepository priceTiers,
                         SeatLockService seatLocks,
                         IdempotencyLockService idempotencyLocks,
-                        OrderWriter orderWriter) {
+                        OrderWriter orderWriter,
+                        TicketService ticketService,
+                        PaymentRepository payments) {
         this.users = users;
         this.orders = orders;
         this.orderItems = orderItems;
@@ -76,6 +83,8 @@ public class OrderService {
         this.seatLocks = seatLocks;
         this.idempotencyLocks = idempotencyLocks;
         this.orderWriter = orderWriter;
+        this.ticketService = ticketService;
+        this.payments = payments;
     }
 
     public CreateResult create(String username, String idempotencyKey, CreateOrderCommand command) {
@@ -190,6 +199,7 @@ public class OrderService {
         if (cancelled == 0) {
             throw new ApiException(HttpStatus.CONFLICT, "ORDER_NOT_CANCELLABLE", "Order is not awaiting payment");
         }
+        payments.expirePendingForOrder(orderId, PaymentStatus.EXPIRED, PaymentStatus.PENDING);
         releaseReservations(order, orderItems.findByOrderId(orderId));
         return toResponse(orders.findById(orderId).orElseThrow(OrderService::orderNotFound));
     }
@@ -203,6 +213,7 @@ public class OrderService {
         if (orders.cancelIfPending(orderId, OrderStatus.CANCELLED, OrderStatus.PENDING_PAYMENT) == 0) {
             return;
         }
+        payments.expirePendingForOrder(orderId, PaymentStatus.EXPIRED, PaymentStatus.PENDING);
         releaseReservations(order, orderItems.findByOrderId(orderId));
     }
 
@@ -293,7 +304,8 @@ public class OrderService {
                 event == null ? null : event.getTitle(),
                 performance == null ? null : performance.getStartsAt(),
                 performance == null ? null : performance.getVenueName(),
-                itemViews);
+                itemViews,
+                ticketService.listForOrder(order.getId()));
     }
 
     private UserAccount requireUser(String username) {

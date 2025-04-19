@@ -32,6 +32,12 @@ public class OrderItem {
     @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)
     private BigDecimal unitPrice;
 
+    @Column(name = "attendee_name", length = 64)
+    private String attendeeName;
+
+    @Column(name = "attendee_id_no", length = 64)
+    private String attendeeIdNo;
+
     protected OrderItem() {
     }
 
@@ -65,5 +71,18 @@ public class OrderItem {
 
     public BigDecimal getUnitPrice() {
         return unitPrice;
+    }
+
+    public String getAttendeeName() {
+        return attendeeName;
+    }
+
+    public String getAttendeeIdNo() {
+        return attendeeIdNo;
+    }
+
+    public void assignAttendee(String attendeeName, String attendeeIdNo) {
+        this.attendeeName = attendeeName;
+        this.attendeeIdNo = attendeeIdNo;
     }
 }

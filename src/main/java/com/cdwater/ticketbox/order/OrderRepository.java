@@ -29,4 +29,15 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     int cancelIfPending(@Param("id") Long id,
                         @Param("cancelled") OrderStatus cancelled,
                         @Param("pending") OrderStatus pending);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            update Order o set o.status = :paid, o.paidAt = :paidAt
+            where o.id = :id and o.status = :pending and o.expiresAt > :now
+            """)
+    int markPaid(@Param("id") Long id,
+                 @Param("paid") OrderStatus paid,
+                 @Param("pending") OrderStatus pending,
+                 @Param("paidAt") Instant paidAt,
+                 @Param("now") Instant now);
 }

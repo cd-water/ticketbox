@@ -1,0 +1,13 @@
+package com.cdwater.ticketbox.ticket;
+
+public record TicketResponse(
+        Long id,
+        Long seatId,
+        Integer rowNo,
+        Integer seatNo,
+        String sectionName,
+        String attendeeName,
+        String attendeeIdNo,
+        String status,
+        String qrPayload) {
+}

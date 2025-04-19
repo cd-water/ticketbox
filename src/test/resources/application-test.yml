@@ -4,3 +4,8 @@ app:
   admin:
     username: admin_test
     password: secret123
+  payment:
+    callback-secret: test-callback-secret
+    callback-delay: 100ms
+  ticket:
+    qr-secret: test-qr-secret

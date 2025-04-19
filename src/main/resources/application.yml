@@ -36,3 +36,8 @@ app:
   order:
     expiry: ${ORDER_EXPIRY:15m}
     sweep-interval: ${ORDER_SWEEP_INTERVAL:60000}
+  payment:
+    callback-secret: ${PAYMENT_CALLBACK_SECRET}
+    callback-delay: ${PAYMENT_CALLBACK_DELAY:300ms}
+  ticket:
+    qr-secret: ${TICKET_QR_SECRET}

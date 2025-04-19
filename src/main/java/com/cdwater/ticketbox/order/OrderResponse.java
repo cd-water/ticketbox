@@ -1,5 +1,7 @@
 package com.cdwater.ticketbox.order;
 
+import com.cdwater.ticketbox.ticket.TicketResponse;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -15,5 +17,6 @@ public record OrderResponse(
         String eventTitle,
         Instant startsAt,
         String venueName,
-        List<OrderItemResponse> items) {
+        List<OrderItemResponse> items,
+        List<TicketResponse> tickets) {
 }

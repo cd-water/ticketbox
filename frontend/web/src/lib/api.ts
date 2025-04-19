@@ -116,7 +116,7 @@ export interface SeatView {
   id: number
   rowNo: number
   seatNo: number
-  status: 'AVAILABLE'
+  status: 'AVAILABLE' | 'LOCKED' | 'SOLD'
 }
 
 export interface SeatMapSection {
@@ -177,6 +177,18 @@ export interface OrderItem {
   unitPrice: number
 }
 
+export interface Ticket {
+  id: number
+  seatId: number | null
+  rowNo: number | null
+  seatNo: number | null
+  sectionName: string | null
+  attendeeName: string
+  attendeeIdNo: string
+  status: 'ISSUED' | 'CHECKED_IN'
+  qrPayload: string
+}
+
 export interface Order {
   id: number
   orderNo: string
@@ -189,6 +201,27 @@ export interface Order {
   startsAt: string | null
   venueName: string | null
   items: OrderItem[]
+  tickets: Ticket[]
+}
+
+export interface Payment {
+  id: number
+  providerTxnNo: string
+  status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'EXPIRED'
+  amount: number
+}
+
+export interface AttendeeInput {
+  seatId: number
+  name: string
+  idNo: string
+}
+
+export function createPayment(orderId: number, attendees: AttendeeInput[]) {
+  return request<Payment>(`/api/orders/${orderId}/payments`, {
+    method: 'POST',
+    body: JSON.stringify({ attendees }),
+  })
 }
 
 export function createOrder(performanceId: number, seatIds: number[], idempotencyKey: string) {

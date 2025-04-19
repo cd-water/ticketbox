@@ -1,0 +1,215 @@
+package com.cdwater.ticketbox.payment;
+
+import com.cdwater.ticketbox.auth.UserAccount;
+import com.cdwater.ticketbox.auth.UserAccountRepository;
+import com.cdwater.ticketbox.common.ApiException;
+import com.cdwater.ticketbox.order.Order;
+import com.cdwater.ticketbox.order.OrderItem;
+import com.cdwater.ticketbox.order.OrderItemRepository;
+import com.cdwater.ticketbox.order.OrderRepository;
+import com.cdwater.ticketbox.order.OrderStatus;
+import com.cdwater.ticketbox.order.SeatLockService;
+import com.cdwater.ticketbox.ticket.TicketIssuer;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+@Service
+public class PaymentService {
+
+    private final UserAccountRepository users;
+    private final OrderRepository orders;
+    private final OrderItemRepository orderItems;
+    private final PaymentRepository payments;
+    private final TicketIssuer ticketIssuer;
+    private final SeatLockService seatLocks;
+    private final MockPaymentGateway mockGateway;
+    private final StringRedisTemplate redis;
+
+    public PaymentService(UserAccountRepository users,
+                          OrderRepository orders,
+                          OrderItemRepository orderItems,
+                          PaymentRepository payments,
+                          TicketIssuer ticketIssuer,
+                          SeatLockService seatLocks,
+                          MockPaymentGateway mockGateway,
+                          StringRedisTemplate redis) {
+        this.users = users;
+        this.orders = orders;
+        this.orderItems = orderItems;
+        this.payments = payments;
+        this.ticketIssuer = ticketIssuer;
+        this.seatLocks = seatLocks;
+        this.mockGateway = mockGateway;
+        this.redis = redis;
+    }
+
+    @Transactional
+    public PaymentResponse create(String username, Long orderId, PaymentRequest request) {
+        UserAccount user = requireUser(username);
+        Order order = orders.findByIdAndUserId(orderId, user.getId()).orElseThrow(PaymentService::orderNotFound);
+        if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
+            throw new ApiException(HttpStatus.CONFLICT, "ORDER_NOT_PAYABLE", "Order is not awaiting payment");
+        }
+        if (order.getExpiresAt().isBefore(Instant.now())) {
+            throw new ApiException(HttpStatus.CONFLICT, "ORDER_EXPIRED", "Order has expired");
+        }
+
+        List<OrderItem> items = orderItems.findByOrderId(orderId);
+        Map<Long, PaymentRequest.Attendee> bySeat = request.attendees().stream()
+                .collect(Collectors.toMap(
+                        PaymentRequest.Attendee::seatId,
+                        Function.identity(),
+                        (left, right) -> {
+                            throw new ApiException(HttpStatus.BAD_REQUEST, "ATTENDEE_MISMATCH",
+                                    "Each seat may only appear once");
+                        }));
+        if (items.isEmpty() || bySeat.size() != items.size()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "ATTENDEE_MISMATCH",
+                    "Provide exactly one attendee per seat");
+        }
+        for (OrderItem item : items) {
+            PaymentRequest.Attendee attendee = item.getSeatId() == null ? null : bySeat.get(item.getSeatId());
+            if (attendee == null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "ATTENDEE_MISMATCH",
+                        "Provide exactly one attendee per seat");
+            }
+            item.assignAttendee(attendee.name().trim(), attendee.idNo().trim());
+        }
+        orderItems.saveAll(items);
+
+        String lockKey = "payment:create:" + orderId;
+        if (!Boolean.TRUE.equals(redis.opsForValue().setIfAbsent(lockKey, "1", Duration.ofSeconds(10)))) {
+            return waitForPendingPayment(orderId);
+        }
+        try {
+            var existing = payments.findFirstByOrderIdAndStatusOrderByCreatedAtDesc(orderId, PaymentStatus.PENDING);
+            if (existing.isPresent()) {
+                return toResponse(existing.get());
+            }
+
+            Payment payment = payments.save(new Payment(
+                    orderId,
+                    "MOCK",
+                    order.getTotalAmount(),
+                    "MOCK-" + UUID.randomUUID().toString().replace("-", "").toUpperCase()));
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    mockGateway.send(payment.getId());
+                }
+            });
+            return toResponse(payment);
+        } finally {
+            redis.delete(lockKey);
+        }
+    }
+
+    private PaymentResponse waitForPendingPayment(Long orderId) {
+        for (int attempt = 0; attempt < 10; attempt++) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+            var existing = payments.findFirstByOrderIdAndStatusOrderByCreatedAtDesc(orderId, PaymentStatus.PENDING);
+            if (existing.isPresent()) {
+                return toResponse(existing.get());
+            }
+        }
+        throw new ApiException(HttpStatus.CONFLICT, "PAYMENT_IN_PROGRESS",
+                "A payment for this order is being created");
+    }
+
+    @Transactional
+    public void handleCallback(CallbackPayload payload) {
+        if (!"SUCCESS".equals(payload.status())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "UNSUPPORTED_CALLBACK_STATUS",
+                    "Only SUCCESS callbacks are supported");
+        }
+        Payment payment = payments.findByProviderTxnNo(payload.providerTxnNo())
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PAYMENT_NOT_FOUND", "Payment not found"));
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            return;
+        }
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            throw new ApiException(HttpStatus.CONFLICT, "PAYMENT_NOT_PENDING", "Payment is not pending");
+        }
+        BigDecimal amount;
+        try {
+            amount = new BigDecimal(payload.amount());
+        } catch (NumberFormatException exception) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_CALLBACK", "Invalid callback amount");
+        }
+        if (amount.compareTo(payment.getAmount()) != 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "AMOUNT_MISMATCH",
+                    "Callback amount does not match the payment");
+        }
+
+        Order order = orders.findById(payment.getOrderId()).orElseThrow(PaymentService::orderNotFound);
+        Instant now = Instant.now();
+        if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
+            payments.updateStatusIfCurrent(payment.getId(), PaymentStatus.FAILED, PaymentStatus.PENDING);
+            return;
+        }
+        if (!order.getExpiresAt().isAfter(now)) {
+            payments.updateStatusIfCurrent(payment.getId(), PaymentStatus.EXPIRED, PaymentStatus.PENDING);
+            return;
+        }
+
+        if (payments.updateStatusIfCurrent(payment.getId(), PaymentStatus.SUCCESS, PaymentStatus.PENDING) == 0) {
+            return;
+        }
+        if (orders.markPaid(payment.getOrderId(), OrderStatus.PAID, OrderStatus.PENDING_PAYMENT, now, now) == 0) {
+            payments.updateStatusIfCurrent(payment.getId(), PaymentStatus.FAILED, PaymentStatus.SUCCESS);
+            return;
+        }
+
+        List<OrderItem> items = orderItems.findByOrderId(order.getId());
+        ticketIssuer.issue(order, items);
+
+        List<Long> seatIds = items.stream()
+                .map(OrderItem::getSeatId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (!seatIds.isEmpty()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    seatLocks.release(order.getPerformanceId(), seatIds, order.getOrderNo());
+                }
+            });
+        }
+    }
+
+    private PaymentResponse toResponse(Payment payment) {
+        return new PaymentResponse(
+                payment.getId(),
+                payment.getProviderTxnNo(),
+                payment.getStatus().name(),
+                payment.getAmount());
+    }
+
+    private UserAccount requireUser(String username) {
+        return users.findByUsername(username)
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Authentication required"));
+    }
+
+    private static ApiException orderNotFound() {
+        return new ApiException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "Order not found");
+    }
+}
