@@ -4,6 +4,8 @@ import com.cdwater.ticketbox.auth.UserAccount;
 import com.cdwater.ticketbox.auth.UserAccountRepository;
 import com.cdwater.ticketbox.common.ApiException;
 import com.cdwater.ticketbox.order.Order;
+import com.cdwater.ticketbox.order.OrderAttendee;
+import com.cdwater.ticketbox.order.OrderAttendeeRepository;
 import com.cdwater.ticketbox.order.OrderItem;
 import com.cdwater.ticketbox.order.OrderItemRepository;
 import com.cdwater.ticketbox.order.OrderRepository;
@@ -20,6 +22,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -33,6 +36,7 @@ public class PaymentService {
     private final UserAccountRepository users;
     private final OrderRepository orders;
     private final OrderItemRepository orderItems;
+    private final OrderAttendeeRepository orderAttendees;
     private final PaymentRepository payments;
     private final TicketIssuer ticketIssuer;
     private final SeatLockService seatLocks;
@@ -42,6 +46,7 @@ public class PaymentService {
     public PaymentService(UserAccountRepository users,
                           OrderRepository orders,
                           OrderItemRepository orderItems,
+                          OrderAttendeeRepository orderAttendees,
                           PaymentRepository payments,
                           TicketIssuer ticketIssuer,
                           SeatLockService seatLocks,
@@ -50,6 +55,7 @@ public class PaymentService {
         this.users = users;
         this.orders = orders;
         this.orderItems = orderItems;
+        this.orderAttendees = orderAttendees;
         this.payments = payments;
         this.ticketIssuer = ticketIssuer;
         this.seatLocks = seatLocks;
@@ -69,27 +75,7 @@ public class PaymentService {
         }
 
         List<OrderItem> items = orderItems.findByOrderId(orderId);
-        Map<Long, PaymentRequest.Attendee> bySeat = request.attendees().stream()
-                .collect(Collectors.toMap(
-                        PaymentRequest.Attendee::seatId,
-                        Function.identity(),
-                        (left, right) -> {
-                            throw new ApiException(HttpStatus.BAD_REQUEST, "ATTENDEE_MISMATCH",
-                                    "Each seat may only appear once");
-                        }));
-        if (items.isEmpty() || bySeat.size() != items.size()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "ATTENDEE_MISMATCH",
-                    "Provide exactly one attendee per seat");
-        }
-        for (OrderItem item : items) {
-            PaymentRequest.Attendee attendee = item.getSeatId() == null ? null : bySeat.get(item.getSeatId());
-            if (attendee == null) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "ATTENDEE_MISMATCH",
-                        "Provide exactly one attendee per seat");
-            }
-            item.assignAttendee(attendee.name().trim(), attendee.idNo().trim());
-        }
-        orderItems.saveAll(items);
+        saveAttendees(orderId, items, request.attendees());
 
         String lockKey = "payment:create:" + orderId;
         if (!Boolean.TRUE.equals(redis.opsForValue().setIfAbsent(lockKey, "1", Duration.ofSeconds(10)))) {
@@ -180,7 +166,7 @@ public class PaymentService {
         }
 
         List<OrderItem> items = orderItems.findByOrderId(order.getId());
-        ticketIssuer.issue(order, items);
+        ticketIssuer.issue(order);
 
         List<Long> seatIds = items.stream()
                 .map(OrderItem::getSeatId)
@@ -194,6 +180,62 @@ public class PaymentService {
                 }
             });
         }
+    }
+
+    private void saveAttendees(Long orderId, List<OrderItem> items, List<PaymentRequest.Attendee> attendees) {
+        if (items.isEmpty()) {
+            throw attendeeMismatch();
+        }
+        List<OrderAttendee> rows = new ArrayList<>();
+
+        boolean seated = items.stream().anyMatch(item -> item.getSeatId() != null);
+        if (seated) {
+            if (attendees.stream().anyMatch(attendee -> attendee.seatId() == null)) {
+                throw attendeeMismatch();
+            }
+            Map<Long, PaymentRequest.Attendee> bySeat = attendees.stream()
+                    .collect(Collectors.toMap(
+                            PaymentRequest.Attendee::seatId,
+                            Function.identity(),
+                            (left, right) -> {
+                                throw attendeeMismatch();
+                            }));
+            if (bySeat.size() != items.size()) {
+                throw attendeeMismatch();
+            }
+            for (OrderItem item : items) {
+                PaymentRequest.Attendee attendee = item.getSeatId() == null ? null : bySeat.get(item.getSeatId());
+                if (attendee == null) {
+                    throw attendeeMismatch();
+                }
+                rows.add(new OrderAttendee(orderId, item.getPriceTierId(), item.getSeatId(),
+                        attendee.name().trim(), attendee.idNo().trim()));
+            }
+        } else {
+            if (attendees.stream().anyMatch(attendee -> attendee.seatId() != null)) {
+                throw attendeeMismatch();
+            }
+            int total = items.stream().mapToInt(OrderItem::getQuantity).sum();
+            if (attendees.size() != total) {
+                throw attendeeMismatch();
+            }
+            int index = 0;
+            for (OrderItem item : items) {
+                for (int seat = 0; seat < item.getQuantity(); seat++) {
+                    PaymentRequest.Attendee attendee = attendees.get(index++);
+                    rows.add(new OrderAttendee(orderId, item.getPriceTierId(), null,
+                            attendee.name().trim(), attendee.idNo().trim()));
+                }
+            }
+        }
+
+        orderAttendees.deleteForOrder(orderId);
+        orderAttendees.saveAll(rows);
+    }
+
+    private static ApiException attendeeMismatch() {
+        return new ApiException(HttpStatus.BAD_REQUEST, "ATTENDEE_MISMATCH",
+                "Provide exactly one attendee per ticket");
     }
 
     private PaymentResponse toResponse(Payment payment) {

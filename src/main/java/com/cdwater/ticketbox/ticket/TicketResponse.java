@@ -6,6 +6,7 @@ public record TicketResponse(
         Integer rowNo,
         Integer seatNo,
         String sectionName,
+        String tierName,
         String attendeeName,
         String attendeeIdNo,
         String status,

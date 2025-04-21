@@ -1,5 +1,7 @@
 package com.cdwater.ticketbox.ticket;
 
+import com.cdwater.ticketbox.performance.PriceTier;
+import com.cdwater.ticketbox.performance.PriceTierRepository;
 import com.cdwater.ticketbox.performance.Seat;
 import com.cdwater.ticketbox.performance.SeatRepository;
 import com.cdwater.ticketbox.performance.Section;
@@ -18,15 +20,18 @@ public class TicketService {
     private final TicketRepository tickets;
     private final SeatRepository seats;
     private final SectionRepository sections;
+    private final PriceTierRepository priceTiers;
     private final TicketQrService qrService;
 
     public TicketService(TicketRepository tickets,
                          SeatRepository seats,
                          SectionRepository sections,
+                         PriceTierRepository priceTiers,
                          TicketQrService qrService) {
         this.tickets = tickets;
         this.seats = seats;
         this.sections = sections;
+        this.priceTiers = priceTiers;
         this.qrService = qrService;
     }
 
@@ -46,17 +51,23 @@ public class TicketService {
                         .map(Seat::getSectionId)
                         .toList()).stream()
                 .collect(Collectors.toMap(Section::getId, Function.identity()));
+        Map<Long, PriceTier> tierById = priceTiers.findAllById(orderTickets.stream()
+                        .map(Ticket::getPriceTierId)
+                        .toList()).stream()
+                .collect(Collectors.toMap(PriceTier::getId, Function.identity()));
 
         return orderTickets.stream()
                 .map(ticket -> {
                     Seat seat = ticket.getSeatId() == null ? null : seatById.get(ticket.getSeatId());
                     Section section = seat == null ? null : sectionById.get(seat.getSectionId());
+                    PriceTier tier = tierById.get(ticket.getPriceTierId());
                     return new TicketResponse(
                             ticket.getId(),
                             ticket.getSeatId(),
                             seat == null ? null : seat.getRowNo(),
                             seat == null ? null : seat.getSeatNo(),
                             section == null ? null : section.getName(),
+                            tier == null ? null : tier.getName(),
                             ticket.getAttendeeName(),
                             ticket.getAttendeeIdNo(),
                             ticket.getStatus().name(),

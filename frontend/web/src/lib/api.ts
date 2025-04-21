@@ -174,6 +174,7 @@ export interface OrderItem {
   seatNo: number | null
   sectionName: string | null
   tierName: string | null
+  quantity: number
   unitPrice: number
 }
 
@@ -183,6 +184,7 @@ export interface Ticket {
   rowNo: number | null
   seatNo: number | null
   sectionName: string | null
+  tierName: string | null
   attendeeName: string
   attendeeIdNo: string
   status: 'ISSUED' | 'CHECKED_IN'
@@ -212,7 +214,7 @@ export interface Payment {
 }
 
 export interface AttendeeInput {
-  seatId: number
+  seatId: number | null
   name: string
   idNo: string
 }
@@ -221,6 +223,19 @@ export function createPayment(orderId: number, attendees: AttendeeInput[]) {
   return request<Payment>(`/api/orders/${orderId}/payments`, {
     method: 'POST',
     body: JSON.stringify({ attendees }),
+  })
+}
+
+export function createGaOrder(
+  performanceId: number,
+  priceTierId: number,
+  quantity: number,
+  idempotencyKey: string,
+) {
+  return request<Order>('/api/orders', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify({ performanceId, priceTierId, quantity }),
   })
 }
 

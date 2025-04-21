@@ -1,6 +1,7 @@
 package com.cdwater.ticketbox.order;
 
 import com.cdwater.ticketbox.common.ApiException;
+import com.cdwater.ticketbox.performance.PriceTierRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -21,15 +22,18 @@ public class OrderWriter {
     private final JdbcTemplate jdbc;
     private final OrderRepository orders;
     private final OrderItemRepository orderItems;
+    private final PriceTierRepository priceTiers;
     private final Duration expiry;
 
     public OrderWriter(JdbcTemplate jdbc,
                        OrderRepository orders,
                        OrderItemRepository orderItems,
+                       PriceTierRepository priceTiers,
                        @Value("${app.order.expiry:15m}") Duration expiry) {
         this.jdbc = jdbc;
         this.orders = orders;
         this.orderItems = orderItems;
+        this.priceTiers = priceTiers;
         this.expiry = expiry;
     }
 
@@ -84,6 +88,20 @@ public class OrderWriter {
     private static ApiException limitExceeded() {
         return new ApiException(HttpStatus.CONFLICT, "PURCHASE_LIMIT_EXCEEDED",
                 "Each user may buy at most 4 tickets per performance");
+    }
+
+    @Transactional
+    public Order persistGa(Long userId, Long performanceId, String orderNo, String idempotencyKey,
+                           Long priceTierId, int quantity, BigDecimal unitPrice) {
+        incrementQuota(userId, performanceId, quantity);
+        if (priceTiers.decrementStock(priceTierId, quantity) == 0) {
+            throw new ApiException(HttpStatus.CONFLICT, "SOLD_OUT", "Not enough tickets remain");
+        }
+        Order order = orders.save(new Order(
+                orderNo, userId, performanceId, unitPrice.multiply(BigDecimal.valueOf(quantity)),
+                idempotencyKey, Instant.now().plus(expiry)));
+        orderItems.save(new OrderItem(order.getId(), priceTierId, null, quantity, unitPrice));
+        return order;
     }
 
     public void releaseQuota(Long userId, Long performanceId, int quantity) {

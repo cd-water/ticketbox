@@ -4,6 +4,7 @@ import { SiteHeader } from '@/components/site-header'
 import { Button } from '@/components/ui/button'
 import {
   ApiError,
+  createGaOrder,
   createOrder,
   getSeatMap,
   getToken,
@@ -21,6 +22,8 @@ export function SeatMapPage() {
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [submitting, setSubmitting] = useState(false)
+  const [gaQuantity, setGaQuantity] = useState<Record<number, number>>({})
+  const [buying, setBuying] = useState(false)
 
   const performanceId = Number(id)
   const loggedIn = Boolean(getToken())
@@ -118,6 +121,26 @@ export function SeatMapPage() {
     })
   }
 
+  async function buyGa(priceTierId: number, quantity: number) {
+    if (!loggedIn) {
+      navigate('/login', { state: { from: `/performances/${performanceId}/seats` } })
+      return
+    }
+    setBuying(true)
+    setError(null)
+    try {
+      const order = await createGaOrder(performanceId, priceTierId, quantity, crypto.randomUUID())
+      navigate(`/orders/${order.id}`)
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : '提交订单失败，请稍后重试。')
+      if (caught instanceof ApiError && caught.code === 'SOLD_OUT') {
+        getSeatMap(performanceId).then(setSeatMap).catch(() => undefined)
+      }
+    } finally {
+      setBuying(false)
+    }
+  }
+
   async function submit() {
     if (!loggedIn) {
       sessionStorage.setItem(selectionKey, JSON.stringify([...selected]))
@@ -172,21 +195,86 @@ export function SeatMapPage() {
 
             {seatMap.seatingMode === 'GENERAL_ADMISSION' ? (
               <>
-                <p className="mt-2 text-sm text-muted-foreground">本场次为无座场次，按票档计数售票。</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  本场次为无座场次，按票档计数售票，每人每场最多 4 张。
+                </p>
+
+                {error && (
+                  <p role="alert" className="mt-4 text-sm text-destructive">
+                    {error}
+                  </p>
+                )}
+
+                {!loggedIn && (
+                  <p className="mt-4 border border-border bg-secondary px-3 py-2 text-sm">
+                    <Link
+                      to="/login"
+                      state={{ from: `/performances/${performanceId}/seats` }}
+                      className="font-medium underline underline-offset-4"
+                    >
+                      登录
+                    </Link>{' '}
+                    后即可提交订单。
+                  </p>
+                )}
+
                 <ul className="mt-8 divide-y divide-border border-y border-border">
-                  {seatMap.priceTiers.map((tier) => (
-                    <li key={tier.id} className="flex items-baseline justify-between py-4 text-sm">
-                      <span>{tier.name}</span>
-                      <span className="flex items-baseline gap-4">
-                        <span className="font-medium">¥{Number(tier.price).toFixed(2)}</span>
-                        <span className="text-muted-foreground">
-                          {tier.stock > 0 ? `余票 ${tier.stock}` : '售罄'}
-                        </span>
-                      </span>
-                    </li>
-                  ))}
+                  {seatMap.priceTiers.map((tier) => {
+                    const soldOut = tier.stock === 0
+                    const max = Math.max(1, Math.min(4, tier.stock))
+                    const quantity = Math.min(gaQuantity[tier.id] ?? 1, max)
+                    return (
+                      <li key={tier.id} className="flex flex-wrap items-center justify-between gap-4 py-4">
+                        <div>
+                          <p className="text-sm font-medium">{tier.name}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            ¥{Number(tier.price).toFixed(2)} · {soldOut ? '售罄' : `余票 ${tier.stock}`}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center border border-border">
+                            <button
+                              type="button"
+                              aria-label={`减少 ${tier.name} 数量`}
+                              disabled={soldOut || quantity <= 1}
+                              onClick={() =>
+                                setGaQuantity((current) => ({
+                                  ...current,
+                                  [tier.id]: Math.max(1, quantity - 1),
+                                }))
+                              }
+                              className="h-8 w-8 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                            >
+                              −
+                            </button>
+                            <span className="w-8 text-center text-sm">{quantity}</span>
+                            <button
+                              type="button"
+                              aria-label={`增加 ${tier.name} 数量`}
+                              disabled={soldOut || quantity >= max}
+                              onClick={() =>
+                                setGaQuantity((current) => ({
+                                  ...current,
+                                  [tier.id]: Math.min(max, quantity + 1),
+                                }))
+                              }
+                              className="h-8 w-8 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                            >
+                              +
+                            </button>
+                          </div>
+                          <Button size="sm" disabled={soldOut || buying} onClick={() => buyGa(tier.id, quantity)}>
+                            {buying ? '提交中…' : '购买'}
+                          </Button>
+                        </div>
+                      </li>
+                    )
+                  })}
                 </ul>
-                <p className="mt-8 text-sm text-muted-foreground">无座购票将在后续阶段开放。</p>
+
+                <p className="mt-6 text-sm text-muted-foreground">
+                  提交订单后请填写观演人并完成模拟支付。
+                </p>
               </>
             ) : (
               <>

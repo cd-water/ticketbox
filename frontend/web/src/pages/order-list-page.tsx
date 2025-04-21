@@ -81,7 +81,9 @@ export function OrderListPage() {
                   <div className="text-right">
                     <OrderStatusBadge status={order.status} />
                     <p className="mt-2 text-sm font-medium">¥{Number(order.totalAmount).toFixed(2)}</p>
-                    <p className="text-xs text-muted-foreground">{order.items.length} 张</p>
+                    <p className="text-xs text-muted-foreground">
+                      {order.items.reduce((sum, item) => sum + item.quantity, 0)} 张
+                    </p>
                   </div>
                 </div>
               </li>

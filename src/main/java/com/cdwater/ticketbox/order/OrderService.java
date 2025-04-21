@@ -6,6 +6,7 @@ import com.cdwater.ticketbox.common.ApiException;
 import com.cdwater.ticketbox.common.PageResponse;
 import com.cdwater.ticketbox.event.Event;
 import com.cdwater.ticketbox.event.EventRepository;
+import com.cdwater.ticketbox.performance.GaStockService;
 import com.cdwater.ticketbox.performance.Performance;
 import com.cdwater.ticketbox.performance.PerformanceRepository;
 import com.cdwater.ticketbox.performance.PriceTier;
@@ -58,6 +59,7 @@ public class OrderService {
     private final OrderWriter orderWriter;
     private final TicketService ticketService;
     private final PaymentRepository payments;
+    private final GaStockService gaStock;
 
     public OrderService(UserAccountRepository users,
                         OrderRepository orders,
@@ -71,7 +73,8 @@ public class OrderService {
                         IdempotencyLockService idempotencyLocks,
                         OrderWriter orderWriter,
                         TicketService ticketService,
-                        PaymentRepository payments) {
+                        PaymentRepository payments,
+                        GaStockService gaStock) {
         this.users = users;
         this.orders = orders;
         this.orderItems = orderItems;
@@ -85,6 +88,7 @@ public class OrderService {
         this.orderWriter = orderWriter;
         this.ticketService = ticketService;
         this.payments = payments;
+        this.gaStock = gaStock;
     }
 
     public CreateResult create(String username, String idempotencyKey, CreateOrderCommand command) {
@@ -131,6 +135,51 @@ public class OrderService {
     }
 
     private CreateResult createLocked(UserAccount user, String idempotencyKey, CreateOrderCommand command) {
+        if (command.priceTierId() != null) {
+            return createGeneralAdmissionLocked(user, idempotencyKey, command);
+        }
+        return createSeatedLocked(user, idempotencyKey, command);
+    }
+
+    private CreateResult createGeneralAdmissionLocked(UserAccount user, String idempotencyKey,
+                                                      CreateOrderCommand command) {
+        Performance performance = performances.findById(command.performanceId())
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PERFORMANCE_NOT_FOUND",
+                        "Performance not found"));
+        if (!sections.findByPerformanceIdOrderByIdAsc(performance.getId()).isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "SEATED_PERFORMANCE",
+                    "This performance sells specific seats");
+        }
+        PriceTier tier = priceTiers.findById(command.priceTierId())
+                .filter(candidate -> candidate.getPerformanceId().equals(performance.getId()))
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PRICE_TIER_NOT_FOUND",
+                        "Price tier not found"));
+
+        int quantity = command.quantity();
+        if (!gaStock.tryReserve(performance.getId(), tier.getId(), quantity, tier.getStock())) {
+            throw new ApiException(HttpStatus.CONFLICT, "SOLD_OUT", "Not enough tickets remain");
+        }
+
+        String orderNo = "ORD" + UUID.randomUUID().toString().replace("-", "").toUpperCase();
+        Order order;
+        try {
+            order = orderWriter.persistGa(
+                    user.getId(), performance.getId(), orderNo, idempotencyKey,
+                    tier.getId(), quantity, tier.getPrice());
+        } catch (DataIntegrityViolationException exception) {
+            gaStock.release(performance.getId(), tier.getId(), quantity);
+            return orders.findByUserIdAndIdempotencyKey(user.getId(), idempotencyKey)
+                    .map(saved -> new CreateResult(toResponse(saved), false))
+                    .orElseThrow(() -> exception);
+        } catch (RuntimeException exception) {
+            gaStock.release(performance.getId(), tier.getId(), quantity);
+            throw exception;
+        }
+        // The order is committed; mapping failures must not release its stock reservation.
+        return new CreateResult(toResponse(order), true);
+    }
+
+    private CreateResult createSeatedLocked(UserAccount user, String idempotencyKey, CreateOrderCommand command) {
         Performance performance = performances.findById(command.performanceId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PERFORMANCE_NOT_FOUND",
                         "Performance not found"));
@@ -243,16 +292,27 @@ public class OrderService {
                 .map(OrderItem::getSeatId)
                 .filter(Objects::nonNull)
                 .toList();
-        if (seatIds.isEmpty()) {
+        List<OrderItem> generalAdmissionItems = items.stream()
+                .filter(item -> item.getSeatId() == null)
+                .toList();
+        for (OrderItem item : generalAdmissionItems) {
+            priceTiers.incrementStock(item.getPriceTierId(), item.getQuantity());
+        }
+        if (seatIds.isEmpty() && generalAdmissionItems.isEmpty()) {
             return;
         }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
                 try {
-                    seatLocks.release(order.getPerformanceId(), seatIds, order.getOrderNo());
+                    if (!seatIds.isEmpty()) {
+                        seatLocks.release(order.getPerformanceId(), seatIds, order.getOrderNo());
+                    }
+                    for (OrderItem item : generalAdmissionItems) {
+                        gaStock.release(order.getPerformanceId(), item.getPriceTierId(), item.getQuantity());
+                    }
                 } catch (RuntimeException ignored) {
-                    // Locks expire on their own; the order is already cancelled in MySQL.
+                    // Redis counters and locks expire or can be rebuilt; MySQL already reflects the cancellation.
                 }
             }
         });
@@ -289,6 +349,7 @@ public class OrderService {
                             seat == null ? null : seat.getSeatNo(),
                             section == null ? null : section.getName(),
                             tier == null ? null : tier.getName(),
+                            item.getQuantity(),
                             item.getUnitPrice());
                 })
                 .toList();

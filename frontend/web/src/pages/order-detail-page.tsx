@@ -13,7 +13,6 @@ import {
   getOrder,
   type AttendeeInput,
   type Order,
-  type OrderItem,
 } from '@/lib/api'
 import { formatDateTime } from '@/lib/format'
 
@@ -25,10 +24,25 @@ export function OrderDetailPage() {
   const [cancelling, setCancelling] = useState(false)
   const [confirmingCancel, setConfirmingCancel] = useState(false)
   const [paying, setPaying] = useState(false)
-  const [attendees, setAttendees] = useState<Record<number, { name: string; idNo: string }>>({})
+  const [attendees, setAttendees] = useState<Record<string, { name: string; idNo: string }>>({})
 
-  const seatItems: (OrderItem & { seatId: number })[] = order
-    ? order.items.filter((item): item is OrderItem & { seatId: number } => item.seatId !== null)
+  const attendeeRows = order
+    ? order.items.flatMap((item, itemIndex) => {
+        if (item.seatId !== null) {
+          return [{
+            key: `seat-${item.seatId}`,
+            seatId: item.seatId as number | null,
+            label: `${item.sectionName ?? '座位'} ${item.rowNo ?? ''}排${item.seatNo ?? ''}号`,
+            meta: `${item.tierName ?? ''} · ¥${Number(item.unitPrice).toFixed(2)}`,
+          }]
+        }
+        return Array.from({ length: item.quantity }, (_, index) => ({
+          key: `ga-${itemIndex}-${index}`,
+          seatId: null as number | null,
+          label: `${item.tierName ?? '无座'} · 第 ${index + 1} 张`,
+          meta: `¥${Number(item.unitPrice).toFixed(2)}`,
+        }))
+      })
     : []
 
   useEffect(() => {
@@ -48,11 +62,21 @@ export function OrderDetailPage() {
         setOrder(loaded)
         setAttendees((current) => {
           const next = { ...current }
-          for (const item of loaded.items) {
-            if (item.seatId !== null && !next[item.seatId]) {
-              next[item.seatId] = { name: '', idNo: '' }
+          loaded.items.forEach((item, itemIndex) => {
+            if (item.seatId !== null) {
+              const key = `seat-${item.seatId}`
+              if (!next[key]) {
+                next[key] = { name: '', idNo: '' }
+              }
+              return
             }
-          }
+            for (let index = 0; index < item.quantity; index++) {
+              const key = `ga-${itemIndex}-${index}`
+              if (!next[key]) {
+                next[key] = { name: '', idNo: '' }
+              }
+            }
+          })
           return next
         })
       })
@@ -97,13 +121,13 @@ export function OrderDetailPage() {
       return
     }
     const list: AttendeeInput[] = []
-    for (const item of seatItems) {
-      const attendee = attendees[item.seatId]
+    for (const row of attendeeRows) {
+      const attendee = attendees[row.key]
       if (!attendee?.name.trim() || !attendee?.idNo.trim()) {
         setError('请填写每位观演人的姓名与证件号。')
         return
       }
-      list.push({ seatId: item.seatId, name: attendee.name.trim(), idNo: attendee.idNo.trim() })
+      list.push({ seatId: row.seatId, name: attendee.name.trim(), idNo: attendee.idNo.trim() })
     }
     if (list.length === 0) {
       setError('订单没有可支付的座位。')
@@ -130,10 +154,10 @@ export function OrderDetailPage() {
     }
   }
 
-  function updateAttendee(seatId: number, field: 'name' | 'idNo', value: string) {
+  function updateAttendee(key: string, field: 'name' | 'idNo', value: string) {
     setAttendees((current) => ({
       ...current,
-      [seatId]: { ...current[seatId], [field]: value },
+      [key]: { ...current[key], [field]: value },
     }))
   }
 
@@ -189,14 +213,20 @@ export function OrderDetailPage() {
               <ul className="divide-y divide-border">
                 {order.items.map((item) => (
                   <li
-                    key={item.seatId ?? item.tierName}
+                    key={item.seatId ?? `ga-${item.tierName}-${item.quantity}`}
                     className="flex items-baseline justify-between gap-4 py-3 text-sm"
                   >
                     <span>
-                      {item.sectionName ?? '座位'} {item.rowNo ?? ''}排{item.seatNo ?? ''}号
-                      <span className="ml-2 text-muted-foreground">{item.tierName}</span>
+                      {item.seatId !== null
+                        ? `${item.sectionName ?? '座位'} ${item.rowNo ?? ''}排${item.seatNo ?? ''}号`
+                        : `${item.tierName ?? '无座'} ×${item.quantity}`}
+                      {item.seatId !== null && item.tierName && (
+                        <span className="ml-2 text-muted-foreground">{item.tierName}</span>
+                      )}
                     </span>
-                    <span className="font-medium">¥{Number(item.unitPrice).toFixed(2)}</span>
+                    <span className="font-medium">
+                      ¥{(Number(item.unitPrice) * item.quantity).toFixed(2)}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -225,37 +255,33 @@ export function OrderDetailPage() {
                 </p>
 
                 <div className="mt-5 space-y-5">
-                  {seatItems.map((item) => (
-                    <div key={item.seatId} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+                  {attendeeRows.map((row) => (
+                    <div key={row.key} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
                       <div>
-                        <p className="text-sm font-medium">
-                          {item.sectionName} {item.rowNo}排{item.seatNo}号
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {item.tierName} · ¥{Number(item.unitPrice).toFixed(2)}
-                        </p>
+                        <p className="text-sm font-medium">{row.label}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{row.meta}</p>
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-1">
-                          <Label htmlFor={`name-${item.seatId}`} className="text-xs">
+                          <Label htmlFor={`name-${row.key}`} className="text-xs">
                             姓名
                           </Label>
                           <Input
-                            id={`name-${item.seatId}`}
-                            value={attendees[item.seatId]?.name ?? ''}
+                            id={`name-${row.key}`}
+                            value={attendees[row.key]?.name ?? ''}
                             maxLength={64}
-                            onChange={(event) => updateAttendee(item.seatId, 'name', event.target.value)}
+                            onChange={(event) => updateAttendee(row.key, 'name', event.target.value)}
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label htmlFor={`id-${item.seatId}`} className="text-xs">
+                          <Label htmlFor={`id-${row.key}`} className="text-xs">
                             证件号
                           </Label>
                           <Input
-                            id={`id-${item.seatId}`}
-                            value={attendees[item.seatId]?.idNo ?? ''}
+                            id={`id-${row.key}`}
+                            value={attendees[row.key]?.idNo ?? ''}
                             maxLength={64}
-                            onChange={(event) => updateAttendee(item.seatId, 'idNo', event.target.value)}
+                            onChange={(event) => updateAttendee(row.key, 'idNo', event.target.value)}
                           />
                         </div>
                       </div>
@@ -311,7 +337,9 @@ export function OrderDetailPage() {
                         <div className="min-w-0">
                           <p className="text-sm font-medium">{ticket.attendeeName}</p>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            {ticket.sectionName} {ticket.rowNo}排{ticket.seatNo}号
+                            {ticket.seatId !== null
+                              ? `${ticket.sectionName} ${ticket.rowNo}排${ticket.seatNo}号`
+                              : ticket.tierName ?? '无座'}
                           </p>
                           <p className="mt-3 text-xs text-muted-foreground">
                             {ticket.status === 'ISSUED' ? '待入场' : '已核销'}

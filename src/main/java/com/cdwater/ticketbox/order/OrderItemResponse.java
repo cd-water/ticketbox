@@ -8,5 +8,6 @@ public record OrderItemResponse(
         Integer seatNo,
         String sectionName,
         String tierName,
+        int quantity,
         BigDecimal unitPrice) {
 }
