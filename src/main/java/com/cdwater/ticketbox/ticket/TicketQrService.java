@@ -15,8 +15,8 @@ public class TicketQrService {
 
     public String payload(Ticket ticket) {
         long issuedAt = ticket.getIssuedAt().getEpochSecond();
-        String canonical = ticket.getId() + "|" + ticket.getPerformanceId() + "|" + issuedAt;
-        return ticket.getId() + "." + ticket.getPerformanceId() + "." + issuedAt
-                + "." + HmacSigner.sign(secret, canonical);
+        String canonical = TicketQrCodec.canonical(ticket.getId(), ticket.getPerformanceId(), issuedAt);
+        return TicketQrCodec.encode(
+                ticket.getId(), ticket.getPerformanceId(), issuedAt, HmacSigner.sign(secret, canonical));
     }
 }

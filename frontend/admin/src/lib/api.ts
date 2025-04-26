@@ -246,3 +246,25 @@ export function generateSection(performanceId: number, input: SectionInput) {
     body: JSON.stringify(input),
   })
 }
+
+export interface CheckInResult {
+  ticketId: number
+  attendeeName: string
+  attendeeIdNo: string
+  tierName: string | null
+  sectionName: string | null
+  rowNo: number | null
+  seatNo: number | null
+  status: string
+  checkedInAt: string
+  eventTitle: string | null
+  startsAt: string | null
+  venueName: string | null
+}
+
+export function checkIn(payload: string) {
+  return request<CheckInResult>('/api/admin/tickets/check-in', {
+    method: 'POST',
+    body: JSON.stringify({ payload }),
+  })
+}

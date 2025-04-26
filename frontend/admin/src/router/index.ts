@@ -17,6 +17,7 @@ const router = createRouter({
         { path: '', redirect: '/events' },
         { path: 'events', component: EventsView },
         { path: 'events/:eventId/performances', component: PerformancesView },
+        { path: 'check-in', component: () => import('@/views/CheckInView.vue') },
       ],
     },
     { path: '/:pathMatch(.*)*', redirect: '/events' },
