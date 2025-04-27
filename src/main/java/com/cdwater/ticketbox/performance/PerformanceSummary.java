@@ -10,5 +10,8 @@ public record PerformanceSummary(
         String venueAddress,
         Instant saleStartAt,
         SeatingMode seatingMode,
+        boolean waitingRoomEnabled,
+        int admissionRate,
+        int tokenTtlSeconds,
         List<PriceTierView> priceTiers) {
 }

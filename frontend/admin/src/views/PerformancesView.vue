@@ -11,6 +11,7 @@ import {
   listPerformances,
   updatePerformance,
   updatePriceTier,
+  updateWaitingRoom,
   type AdminEvent,
   type Performance,
   type PriceTier,
@@ -25,6 +26,15 @@ const performances = ref<Performance[]>([])
 const loading = ref(false)
 const seatDialogVisible = ref(false)
 const seatPerformance = ref<Performance | null>(null)
+
+const waitingDialog = ref(false)
+const waitingSaving = ref(false)
+const waitingPerformanceId = ref<number | null>(null)
+const waitingForm = reactive({
+  enabled: false,
+  admissionRate: 10,
+  tokenTtlSeconds: 600,
+})
 
 const performanceDialog = ref(false)
 const performanceSaving = ref(false)
@@ -114,6 +124,35 @@ function openCreatePerformance() {
 function openSections(performance: Performance) {
   seatPerformance.value = performance
   seatDialogVisible.value = true
+}
+
+function openWaitingRoom(performance: Performance) {
+  waitingPerformanceId.value = performance.id
+  waitingForm.enabled = performance.waitingRoomEnabled
+  waitingForm.admissionRate = performance.admissionRate
+  waitingForm.tokenTtlSeconds = performance.tokenTtlSeconds
+  waitingDialog.value = true
+}
+
+async function saveWaitingRoom() {
+  if (waitingPerformanceId.value === null) {
+    return
+  }
+  waitingSaving.value = true
+  try {
+    await updateWaitingRoom(waitingPerformanceId.value, {
+      enabled: waitingForm.enabled,
+      admissionRate: waitingForm.admissionRate,
+      tokenTtlSeconds: waitingForm.tokenTtlSeconds,
+    })
+    ElMessage.success('限流配置已保存')
+    waitingDialog.value = false
+    await load()
+  } catch (caught) {
+    ElMessage.error(caught instanceof ApiError ? caught.message : '保存限流配置失败')
+  } finally {
+    waitingSaving.value = false
+  }
 }
 
 function openEditPerformance(performance: Performance) {
@@ -266,12 +305,19 @@ async function saveTier() {
           {{ row.seatingMode === 'SEATED' ? '对号入座' : '无座' }}
         </template>
       </el-table-column>
+      <el-table-column label="等待室" width="100">
+        <template #default="{ row }">
+          <el-tag v-if="row.waitingRoomEnabled" type="warning" disable-transitions>限流中</el-tag>
+          <span v-else class="muted">—</span>
+        </template>
+      </el-table-column>
       <el-table-column label="票档数" width="90">
         <template #default="{ row }">{{ row.priceTiers.length }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="150" fixed="right">
+      <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
           <el-button text type="primary" @click="openSections(row)">座位</el-button>
+          <el-button text type="primary" @click="openWaitingRoom(row)">限流</el-button>
           <el-button text type="primary" @click="openEditPerformance(row)">编辑</el-button>
         </template>
       </el-table-column>
@@ -307,6 +353,25 @@ async function saveTier() {
     </el-dialog>
 
     <SectionsDialog v-model="seatDialogVisible" :performance="seatPerformance" @updated="load" />
+
+    <el-dialog v-model="waitingDialog" title="等待室与限流" width="440px">
+      <el-form label-position="top">
+        <el-form-item label="启用等待室">
+          <el-switch v-model="waitingForm.enabled" />
+        </el-form-item>
+        <el-form-item label="放行速率（人/秒）">
+          <el-input-number v-model="waitingForm.admissionRate" :min="1" :max="1000" />
+        </el-form-item>
+        <el-form-item label="准入令牌有效期（秒）">
+          <el-input-number v-model="waitingForm.tokenTtlSeconds" :min="60" :max="3600" :step="60" />
+        </el-form-item>
+      </el-form>
+      <p class="hint">开启后，用户购票前需先排队领取准入令牌。</p>
+      <template #footer>
+        <el-button @click="waitingDialog = false">取消</el-button>
+        <el-button type="primary" :loading="waitingSaving" @click="saveWaitingRoom">保存</el-button>
+      </template>
+    </el-dialog>
 
     <el-dialog
       v-model="tierDialog"
@@ -390,6 +455,12 @@ h1 {
 }
 
 .muted {
+  color: var(--el-text-color-secondary);
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
   color: var(--el-text-color-secondary);
 }
 </style>

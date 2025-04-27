@@ -157,7 +157,16 @@ export interface Performance {
   venueAddress: string
   saleStartAt: string
   seatingMode: SeatingMode
+  waitingRoomEnabled: boolean
+  admissionRate: number
+  tokenTtlSeconds: number
   priceTiers: PriceTier[]
+}
+
+export interface WaitingRoomInput {
+  enabled: boolean
+  admissionRate: number
+  tokenTtlSeconds: number
 }
 
 export interface SectionInput {
@@ -243,6 +252,13 @@ export function listSections(performanceId: number) {
 export function generateSection(performanceId: number, input: SectionInput) {
   return request<SectionSummary>(`/api/admin/performances/${performanceId}/sections`, {
     method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function updateWaitingRoom(performanceId: number, input: WaitingRoomInput) {
+  return request<Performance>(`/api/admin/performances/${performanceId}/waiting-room`, {
+    method: 'PUT',
     body: JSON.stringify(input),
   })
 }

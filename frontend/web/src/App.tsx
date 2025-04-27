@@ -6,6 +6,7 @@ import { OrderDetailPage } from '@/pages/order-detail-page'
 import { OrderListPage } from '@/pages/order-list-page'
 import { RegisterPage } from '@/pages/register-page'
 import { SeatMapPage } from '@/pages/seat-map-page'
+import { WaitingRoomPage } from '@/pages/waiting-room-page'
 import { RequireAuth } from '@/components/require-auth'
 
 export default function App() {
@@ -15,6 +16,14 @@ export default function App() {
         <Route path="/" element={<EventListPage />} />
         <Route path="/events/:id" element={<EventDetailPage />} />
         <Route path="/performances/:id/seats" element={<SeatMapPage />} />
+        <Route
+          path="/performances/:id/waiting-room"
+          element={
+            <RequireAuth>
+              <WaitingRoomPage />
+            </RequireAuth>
+          }
+        />
         <Route
           path="/orders"
           element={

@@ -127,12 +127,20 @@ export function EventDetailPage() {
                             ))
                           )}
                         </div>
-                        {performance.seatingMode === 'SEATED' && (
+                        {performance.priceTiers.length > 0 && (
                           <Link
-                            to={`/performances/${performance.id}/seats`}
+                            to={
+                              performance.waitingRoomEnabled
+                                ? `/performances/${performance.id}/waiting-room`
+                                : `/performances/${performance.id}/seats`
+                            }
                             className="text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                           >
-                            查看座位图
+                            {performance.waitingRoomEnabled
+                              ? '排队入场'
+                              : performance.seatingMode === 'SEATED'
+                                ? '查看座位图'
+                                : '去购票'}
                           </Link>
                         )}
                       </div>

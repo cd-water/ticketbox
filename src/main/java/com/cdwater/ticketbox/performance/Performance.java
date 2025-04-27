@@ -34,6 +34,15 @@ public class Performance {
     @Column(name = "sale_start_at", nullable = false)
     private Instant saleStartAt;
 
+    @Column(name = "waiting_room_enabled", nullable = false)
+    private boolean waitingRoomEnabled;
+
+    @Column(name = "admission_rate", nullable = false)
+    private int admissionRate;
+
+    @Column(name = "token_ttl_seconds", nullable = false)
+    private int tokenTtlSeconds;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -49,6 +58,9 @@ public class Performance {
         this.venueName = venueName;
         this.venueAddress = venueAddress;
         this.saleStartAt = saleStartAt;
+        this.waitingRoomEnabled = false;
+        this.admissionRate = 10;
+        this.tokenTtlSeconds = 600;
     }
 
     public void updateDetails(Long eventId, Instant startsAt, String venueName, String venueAddress, Instant saleStartAt) {
@@ -57,6 +69,24 @@ public class Performance {
         this.venueName = venueName;
         this.venueAddress = venueAddress;
         this.saleStartAt = saleStartAt;
+    }
+
+    public void updateWaitingRoom(boolean enabled, int admissionRate, int tokenTtlSeconds) {
+        this.waitingRoomEnabled = enabled;
+        this.admissionRate = admissionRate;
+        this.tokenTtlSeconds = tokenTtlSeconds;
+    }
+
+    public boolean isWaitingRoomEnabled() {
+        return waitingRoomEnabled;
+    }
+
+    public int getAdmissionRate() {
+        return admissionRate;
+    }
+
+    public int getTokenTtlSeconds() {
+        return tokenTtlSeconds;
     }
 
     @PrePersist

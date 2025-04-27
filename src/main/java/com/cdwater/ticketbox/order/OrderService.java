@@ -18,6 +18,7 @@ import com.cdwater.ticketbox.performance.SectionRepository;
 import com.cdwater.ticketbox.payment.PaymentRepository;
 import com.cdwater.ticketbox.payment.PaymentStatus;
 import com.cdwater.ticketbox.ticket.TicketService;
+import com.cdwater.ticketbox.waitingroom.WaitingRoomService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -60,6 +61,7 @@ public class OrderService {
     private final TicketService ticketService;
     private final PaymentRepository payments;
     private final GaStockService gaStock;
+    private final WaitingRoomService waitingRoom;
 
     public OrderService(UserAccountRepository users,
                         OrderRepository orders,
@@ -74,7 +76,8 @@ public class OrderService {
                         OrderWriter orderWriter,
                         TicketService ticketService,
                         PaymentRepository payments,
-                        GaStockService gaStock) {
+                        GaStockService gaStock,
+                        WaitingRoomService waitingRoom) {
         this.users = users;
         this.orders = orders;
         this.orderItems = orderItems;
@@ -89,6 +92,7 @@ public class OrderService {
         this.ticketService = ticketService;
         this.payments = payments;
         this.gaStock = gaStock;
+        this.waitingRoom = waitingRoom;
     }
 
     public CreateResult create(String username, String idempotencyKey, CreateOrderCommand command) {
@@ -146,6 +150,7 @@ public class OrderService {
         Performance performance = performances.findById(command.performanceId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PERFORMANCE_NOT_FOUND",
                         "Performance not found"));
+        waitingRoom.requireAdmission(performance.getId(), user.getUsername());
         if (!sections.findByPerformanceIdOrderByIdAsc(performance.getId()).isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "SEATED_PERFORMANCE",
                     "This performance sells specific seats");
@@ -183,6 +188,7 @@ public class OrderService {
         Performance performance = performances.findById(command.performanceId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PERFORMANCE_NOT_FOUND",
                         "Performance not found"));
+        waitingRoom.requireAdmission(performance.getId(), user.getUsername());
         List<Section> sectionList = sections.findByPerformanceIdOrderByIdAsc(performance.getId());
         if (sectionList.isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "NOT_SEATED",

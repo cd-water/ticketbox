@@ -109,7 +109,23 @@ export interface Performance {
   venueAddress: string
   saleStartAt: string
   seatingMode: SeatingMode
+  waitingRoomEnabled: boolean
+  admissionRate: number
+  tokenTtlSeconds: number
   priceTiers: PriceTier[]
+}
+
+export interface WaitingRoomStatus {
+  enabled: boolean
+  joined: boolean
+  admitted: boolean
+  position: number
+  estimatedWaitSeconds: number
+  tokenExpiresAt: string | null
+  eventId: number | null
+  eventTitle: string | null
+  startsAt: string | null
+  venueName: string | null
 }
 
 export interface SeatView {
@@ -164,6 +180,16 @@ export function getEvent(id: number) {
 
 export function getSeatMap(performanceId: number) {
   return request<SeatMap>(`/api/performances/${performanceId}/seat-map`)
+}
+
+export function joinWaitingRoom(performanceId: number) {
+  return request<WaitingRoomStatus>(`/api/performances/${performanceId}/waiting-room/join`, {
+    method: 'POST',
+  })
+}
+
+export function waitingRoomStatus(performanceId: number) {
+  return request<WaitingRoomStatus>(`/api/performances/${performanceId}/waiting-room/status`)
 }
 
 export type OrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'CANCELLED'

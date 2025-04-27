@@ -68,13 +68,18 @@ export function SeatMapPage() {
         }
       })
       .catch((caught) => {
-        if (active) {
-          setError(
-            caught instanceof ApiError && caught.status === 404
-              ? '场次不存在或尚未发布。'
-              : '无法加载座位图，请稍后重试。',
-          )
+        if (!active) {
+          return
         }
+        if (caught instanceof ApiError && caught.code === 'TOKEN_REQUIRED') {
+          navigate(`/performances/${performanceId}/waiting-room`, { replace: true })
+          return
+        }
+        setError(
+          caught instanceof ApiError && caught.status === 404
+            ? '场次不存在或尚未发布。'
+            : '无法加载座位图，请稍后重试。',
+        )
       })
       .finally(() => {
         if (active) {

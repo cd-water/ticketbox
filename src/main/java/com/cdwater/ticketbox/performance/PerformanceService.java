@@ -49,6 +49,13 @@ public class PerformanceService {
         return performance;
     }
 
+    @Transactional
+    public Performance updateWaitingRoom(Long id, boolean enabled, int admissionRate, int tokenTtlSeconds) {
+        Performance performance = require(id);
+        performance.updateWaitingRoom(enabled, admissionRate, tokenTtlSeconds);
+        return performance;
+    }
+
     private Performance require(Long id) {
         return performances.findById(id).orElseThrow(PerformanceService::notFound);
     }
@@ -72,6 +79,9 @@ public class PerformanceService {
                 performance.getVenueAddress(),
                 performance.getSaleStartAt(),
                 seatingMode,
+                performance.isWaitingRoomEnabled(),
+                performance.getAdmissionRate(),
+                performance.getTokenTtlSeconds(),
                 tiers);
     }
 

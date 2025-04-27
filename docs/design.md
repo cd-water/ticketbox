@@ -125,7 +125,7 @@ com.cdwater.ticketbox
 | 订单 | `POST /api/orders`(Idempotency-Key)、`GET /api/orders`、`GET /api/orders/{id}`、`POST /api/orders/{id}/cancel` |
 | 支付 | `POST /api/orders/{id}/payments`、`POST /api/payments/callback`、mock 端模拟成功/超时 |
 | 管理-演出 | `GET/POST /api/admin/events`、`GET/PUT /api/admin/events/{id}`、`POST /api/admin/events/{id}/publish|unpublish`、`POST /api/admin/files` |
-| 管理-场次 | `GET /api/admin/performances?eventId=`、`POST/PUT /api/admin/performances`、区域与座位生成、限流配置 |
+| 管理-场次 | `GET /api/admin/performances?eventId=`、`POST/PUT /api/admin/performances`、区域与座位生成、`PUT /api/admin/performances/{id}/waiting-room` |
 | 管理-票档 | `POST/PUT /api/admin/price-tiers` |
 | 管理-订单 | `GET /api/admin/orders`、`GET /api/admin/orders/{id}` |
 | 管理-核销 | `POST /api/admin/tickets/check-in` |
