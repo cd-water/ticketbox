@@ -263,6 +263,84 @@ export function updateWaitingRoom(performanceId: number, input: WaitingRoomInput
   })
 }
 
+export interface AdminOrderItem {
+  seatId: number | null
+  rowNo: number | null
+  seatNo: number | null
+  sectionName: string | null
+  tierName: string | null
+  quantity: number
+  unitPrice: number
+}
+
+export interface AdminTicket {
+  id: number
+  seatId: number | null
+  rowNo: number | null
+  seatNo: number | null
+  sectionName: string | null
+  tierName: string | null
+  attendeeName: string
+  attendeeIdNo: string
+  status: string
+  qrPayload: string
+}
+
+export interface AdminOrder {
+  id: number
+  orderNo: string
+  status: string
+  totalAmount: number
+  expiresAt: string
+  createdAt: string
+  eventId: number | null
+  eventTitle: string | null
+  startsAt: string | null
+  venueName: string | null
+  items: AdminOrderItem[]
+  tickets: AdminTicket[]
+}
+
+export interface AdminOrderEntry {
+  username: string
+  order: AdminOrder
+}
+
+export interface AdminOrderSummary {
+  username: string
+  id: number
+  orderNo: string
+  status: string
+  totalAmount: number
+  createdAt: string
+  eventId: number | null
+  eventTitle: string | null
+  startsAt: string | null
+  venueName: string | null
+}
+
+export function listAdminOrders(params: {
+  status?: string
+  performanceId?: number
+  page?: number
+  size?: number
+}) {
+  const search = new URLSearchParams()
+  if (params.status) {
+    search.set('status', params.status)
+  }
+  if (params.performanceId) {
+    search.set('performanceId', String(params.performanceId))
+  }
+  search.set('page', String(params.page ?? 0))
+  search.set('size', String(params.size ?? 20))
+  return request<PageResult<AdminOrderSummary>>(`/api/admin/orders?${search.toString()}`)
+}
+
+export function getAdminOrder(id: number) {
+  return request<AdminOrderEntry>(`/api/admin/orders/${id}`)
+}
+
 export interface CheckInResult {
   ticketId: number
   attendeeName: string

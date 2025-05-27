@@ -19,6 +19,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Page<Order> findByUserId(Long userId, Pageable pageable);
 
+    Page<Order> findByStatus(OrderStatus status, Pageable pageable);
+
+    Page<Order> findByPerformanceId(Long performanceId, Pageable pageable);
+
+    Page<Order> findByPerformanceIdAndStatus(Long performanceId, OrderStatus status, Pageable pageable);
+
     List<Order> findByStatus(OrderStatus status);
 
     @Query("select o.id from Order o where o.status = :status and o.expiresAt < :now")

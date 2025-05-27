@@ -35,6 +35,7 @@ function signOut() {
       </router-link>
       <nav class="nav">
         <router-link to="/events">演出管理</router-link>
+        <router-link to="/orders">订单</router-link>
         <router-link to="/check-in">核销</router-link>
       </nav>
       <div class="user">

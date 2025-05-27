@@ -20,6 +20,7 @@ import com.cdwater.ticketbox.payment.PaymentStatus;
 import com.cdwater.ticketbox.ticket.TicketService;
 import com.cdwater.ticketbox.waitingroom.WaitingRoomService;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -30,6 +31,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -45,6 +47,22 @@ import java.util.stream.Collectors;
 public class OrderService {
 
     public record CreateResult(OrderResponse order, boolean created) {
+    }
+
+    public record AdminOrderResponse(String username, OrderResponse order) {
+    }
+
+    public record AdminOrderSummary(
+            String username,
+            Long id,
+            String orderNo,
+            String status,
+            BigDecimal totalAmount,
+            Instant createdAt,
+            Long eventId,
+            String eventTitle,
+            Instant startsAt,
+            String venueName) {
     }
 
     private final UserAccountRepository users;
@@ -288,6 +306,58 @@ public class OrderService {
         return orders.findByIdAndUserId(orderId, user.getId())
                 .map(this::toResponse)
                 .orElseThrow(OrderService::orderNotFound);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<AdminOrderSummary> listAdmin(Long performanceId, OrderStatus status,
+                                                     int page, int size) {
+        Pageable pageable = PageRequest.of(
+                Math.max(page, 0),
+                Math.clamp(size, 1, 50),
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Order> result;
+        if (performanceId != null && status != null) {
+            result = orders.findByPerformanceIdAndStatus(performanceId, status, pageable);
+        } else if (performanceId != null) {
+            result = orders.findByPerformanceId(performanceId, pageable);
+        } else if (status != null) {
+            result = orders.findByStatus(status, pageable);
+        } else {
+            result = orders.findAll(pageable);
+        }
+        return PageResponse.from(result, this::toAdminSummary);
+    }
+
+    @Transactional(readOnly = true)
+    public AdminOrderResponse getAdmin(Long orderId) {
+        Order order = orders.findById(orderId).orElseThrow(OrderService::orderNotFound);
+        return toAdminResponse(order);
+    }
+
+    private AdminOrderResponse toAdminResponse(Order order) {
+        String username = users.findById(order.getUserId())
+                .map(UserAccount::getUsername)
+                .orElse("unknown");
+        return new AdminOrderResponse(username, toResponse(order));
+    }
+
+    private AdminOrderSummary toAdminSummary(Order order) {
+        String username = users.findById(order.getUserId())
+                .map(UserAccount::getUsername)
+                .orElse("unknown");
+        Performance performance = performances.findById(order.getPerformanceId()).orElse(null);
+        Event event = performance == null ? null : events.findById(performance.getEventId()).orElse(null);
+        return new AdminOrderSummary(
+                username,
+                order.getId(),
+                order.getOrderNo(),
+                order.getStatus().name(),
+                order.getTotalAmount(),
+                order.getCreatedAt(),
+                event == null ? null : event.getId(),
+                event == null ? null : event.getTitle(),
+                performance == null ? null : performance.getStartsAt(),
+                performance == null ? null : performance.getVenueName());
     }
 
     private void releaseReservations(Order order, List<OrderItem> items) {

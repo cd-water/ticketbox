@@ -22,8 +22,12 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/events/**", "/api/performances/*/seat-map",
-                                "/api/payments/callback", "/actuator/health").permitAll()
+                        .requestMatchers(
+                                "/api/auth/**", "/api/events/**", "/api/performances/*/seat-map",
+                                "/api/payments/callback", "/actuator/health",
+                                "/", "/index.html", "/assets/**", "/ticket.svg",
+                                "/login", "/register", "/events/**", "/performances/**", "/orders/**",
+                                "/admin", "/admin/**", "/error").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(exceptions -> exceptions

@@ -47,6 +47,41 @@ services:
     networks:
       - ticketbox-network
 
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: ticketbox-app
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+    environment:
+      # dev profile seeds the demo admin; set to empty for a production deployment.
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE-dev}
+      DB_URL: jdbc:mysql://mysql:3306/ticketbox?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
+      DB_USERNAME: ${MYSQL_USER:-ticketmysql}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-ticketmysql}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-ticketredis}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-ticketminio}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-ticketminio}
+      MINIO_BUCKET: ticketbox
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-please-change-0123456789abcdef0123456789abcdef}
+      PAYMENT_CALLBACK_SECRET: ${PAYMENT_CALLBACK_SECRET:-dev-callback-secret-change-me-0123456789abcdef}
+      TICKET_QR_SECRET: ${TICKET_QR_SECRET:-dev-qr-secret-change-me-0123456789abcdef}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-ticketadmin}
+    ports:
+      - "8888:8888"
+    networks:
+      - ticketbox-network
+
 volumes:
   mysql-data:
     name: mysql-data

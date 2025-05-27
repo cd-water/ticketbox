@@ -3,7 +3,8 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  base: mode === 'production' ? '/admin/' : '/',
   plugins: [vue()],
   resolve: {
     alias: {
@@ -16,4 +17,4 @@ export default defineConfig({
       '/api': process.env.VITE_API_TARGET ?? 'http://localhost:8888',
     },
   },
-})
+}))

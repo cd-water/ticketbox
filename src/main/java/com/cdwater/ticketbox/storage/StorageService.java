@@ -39,12 +39,23 @@ public class StorageService {
 
     @PostConstruct
     void ensureBucket() {
-        try {
-            if (!client.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())) {
-                client.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
+        for (int attempt = 0; attempt < 30; attempt++) {
+            try {
+                if (!client.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())) {
+                    client.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
+                }
+                return;
+            } catch (Exception exception) {
+                if (attempt == 29) {
+                    throw new IllegalStateException("Cannot prepare MinIO bucket " + bucket, exception);
+                }
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("Interrupted while preparing MinIO bucket " + bucket, interrupted);
+                }
             }
-        } catch (Exception exception) {
-            throw new IllegalStateException("Cannot prepare MinIO bucket " + bucket, exception);
         }
     }
 

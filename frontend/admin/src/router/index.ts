@@ -2,11 +2,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import EventsView from '@/views/EventsView.vue'
 import LoginView from '@/views/LoginView.vue'
+import OrdersView from '@/views/OrdersView.vue'
 import PerformancesView from '@/views/PerformancesView.vue'
 import { getToken } from '@/lib/api'
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/login', component: LoginView },
     {
@@ -18,6 +19,7 @@ const router = createRouter({
         { path: 'events', component: EventsView },
         { path: 'events/:eventId/performances', component: PerformancesView },
         { path: 'check-in', component: () => import('@/views/CheckInView.vue') },
+        { path: 'orders', component: OrdersView },
       ],
     },
     { path: '/:pathMatch(.*)*', redirect: '/events' },
