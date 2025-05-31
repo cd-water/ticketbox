@@ -10,7 +10,7 @@ import com.cdwater.ticketbox.order.OrderItem;
 import com.cdwater.ticketbox.order.OrderItemRepository;
 import com.cdwater.ticketbox.order.OrderRepository;
 import com.cdwater.ticketbox.order.OrderStatus;
-import com.cdwater.ticketbox.order.SeatLockService;
+import com.cdwater.ticketbox.seat.SeatAvailability;
 import com.cdwater.ticketbox.ticket.TicketIssuer;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
@@ -39,7 +39,7 @@ public class PaymentService {
     private final OrderAttendeeRepository orderAttendees;
     private final PaymentRepository payments;
     private final TicketIssuer ticketIssuer;
-    private final SeatLockService seatLocks;
+    private final SeatAvailability seatAvailability;
     private final MockPaymentGateway mockGateway;
     private final StringRedisTemplate redis;
 
@@ -49,7 +49,7 @@ public class PaymentService {
                           OrderAttendeeRepository orderAttendees,
                           PaymentRepository payments,
                           TicketIssuer ticketIssuer,
-                          SeatLockService seatLocks,
+                          SeatAvailability seatAvailability,
                           MockPaymentGateway mockGateway,
                           StringRedisTemplate redis) {
         this.users = users;
@@ -58,7 +58,7 @@ public class PaymentService {
         this.orderAttendees = orderAttendees;
         this.payments = payments;
         this.ticketIssuer = ticketIssuer;
-        this.seatLocks = seatLocks;
+        this.seatAvailability = seatAvailability;
         this.mockGateway = mockGateway;
         this.redis = redis;
     }
@@ -176,7 +176,7 @@ public class PaymentService {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    seatLocks.release(order.getPerformanceId(), seatIds, order.getOrderNo());
+                    seatAvailability.release(order.getPerformanceId(), seatIds, order.getOrderNo());
                 }
             });
         }

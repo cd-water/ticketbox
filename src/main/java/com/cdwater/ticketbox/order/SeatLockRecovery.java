@@ -1,5 +1,6 @@
 package com.cdwater.ticketbox.order;
 
+import com.cdwater.ticketbox.seat.SeatAvailability;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
@@ -12,12 +13,12 @@ public class SeatLockRecovery implements ApplicationRunner {
 
     private final OrderRepository orders;
     private final OrderItemRepository orderItems;
-    private final SeatLockService seatLocks;
+    private final SeatAvailability seatAvailability;
 
-    public SeatLockRecovery(OrderRepository orders, OrderItemRepository orderItems, SeatLockService seatLocks) {
+    public SeatLockRecovery(OrderRepository orders, OrderItemRepository orderItems, SeatAvailability seatAvailability) {
         this.orders = orders;
         this.orderItems = orderItems;
-        this.seatLocks = seatLocks;
+        this.seatAvailability = seatAvailability;
     }
 
     @Override
@@ -28,7 +29,7 @@ public class SeatLockRecovery implements ApplicationRunner {
                     .filter(Objects::nonNull)
                     .toList();
             if (!seatIds.isEmpty()) {
-                seatLocks.recover(order.getPerformanceId(), seatIds, order.getOrderNo());
+                seatAvailability.recover(order.getPerformanceId(), seatIds, order.getOrderNo());
             }
         }
     }

@@ -13,16 +13,13 @@ import com.cdwater.ticketbox.performance.Section;
 import com.cdwater.ticketbox.performance.SectionRepository;
 import com.cdwater.ticketbox.performance.Seat;
 import com.cdwater.ticketbox.performance.SeatRepository;
-import com.cdwater.ticketbox.ticket.TicketRepository;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import com.cdwater.ticketbox.waitingroom.WaitingRoomService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -34,27 +31,29 @@ public class SeatMapService {
     private final PriceTierService priceTierService;
     private final SectionRepository sections;
     private final SeatRepository seats;
-    private final TicketRepository tickets;
-    private final StringRedisTemplate redis;
+    private final SeatAvailability seatAvailability;
+    private final WaitingRoomService waitingRoomService;
 
     public SeatMapService(PerformanceRepository performances,
                           EventRepository events,
                           PriceTierService priceTierService,
                           SectionRepository sections,
                           SeatRepository seats,
-                          TicketRepository tickets,
-                          StringRedisTemplate redis) {
+                          SeatAvailability seatAvailability,
+                          WaitingRoomService waitingRoomService) {
         this.performances = performances;
         this.events = events;
         this.priceTierService = priceTierService;
         this.sections = sections;
         this.seats = seats;
-        this.tickets = tickets;
-        this.redis = redis;
+        this.seatAvailability = seatAvailability;
+        this.waitingRoomService = waitingRoomService;
     }
 
     @Transactional(readOnly = true)
-    public SeatMapResponse getForPublic(Long performanceId) {
+    public SeatMapResponse getForPublic(Long performanceId, String username) {
+        waitingRoomService.requireAdmission(performanceId, username);
+
         Performance performance = performances.findById(performanceId).orElseThrow(SeatMapService::notFound);
         Event event = events.findById(performance.getEventId()).orElseThrow(SeatMapService::notFound);
         if (event.getStatus() != EventStatus.PUBLISHED) {
@@ -72,7 +71,8 @@ public class SeatMapService {
         Map<Long, PriceTierView> tierById = tiers.stream()
                 .collect(Collectors.toMap(PriceTierView::id, Function.identity()));
         List<Seat> allSeats = seats.findByPerformanceIdOrderBySectionIdAscRowNoAscSeatNoAsc(performanceId);
-        Map<Long, SeatStatus> statusById = seatStatuses(performanceId, allSeats);
+        Map<Long, SeatStatus> statusById = seatAvailability.statuses(
+                performanceId, allSeats.stream().map(Seat::getId).toList());
         Map<Long, List<Seat>> seatsBySection = allSeats.stream()
                 .collect(Collectors.groupingBy(Seat::getSectionId));
 
@@ -93,31 +93,6 @@ public class SeatMapService {
                 .toList();
 
         return new SeatMapResponse(event.getId(), performanceId, SeatingMode.SEATED, sectionViews, tiers);
-    }
-
-    private Map<Long, SeatStatus> seatStatuses(Long performanceId, List<Seat> allSeats) {
-        Map<Long, SeatStatus> statuses = new HashMap<>(allSeats.size());
-        if (allSeats.isEmpty()) {
-            return statuses;
-        }
-        Set<Long> sold = tickets.findSeatIdsByPerformanceId(performanceId);
-        List<String> keys = allSeats.stream()
-                .map(seat -> SeatLockKeys.of(performanceId, seat.getId()))
-                .toList();
-        List<String> values = redis.opsForValue().multiGet(keys);
-        for (int index = 0; index < allSeats.size(); index++) {
-            Seat seat = allSeats.get(index);
-            SeatStatus status;
-            if (sold.contains(seat.getId())) {
-                status = SeatStatus.SOLD;
-            } else if (values != null && values.get(index) != null) {
-                status = SeatStatus.LOCKED;
-            } else {
-                status = SeatStatus.AVAILABLE;
-            }
-            statuses.put(seat.getId(), status);
-        }
-        return statuses;
     }
 
     private static ApiException notFound() {

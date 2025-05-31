@@ -15,6 +15,7 @@ import com.cdwater.ticketbox.performance.Seat;
 import com.cdwater.ticketbox.performance.SeatRepository;
 import com.cdwater.ticketbox.performance.Section;
 import com.cdwater.ticketbox.performance.SectionRepository;
+import com.cdwater.ticketbox.seat.SeatAvailability;
 import com.cdwater.ticketbox.payment.PaymentRepository;
 import com.cdwater.ticketbox.payment.PaymentStatus;
 import com.cdwater.ticketbox.ticket.TicketService;
@@ -73,7 +74,7 @@ public class OrderService {
     private final SectionRepository sections;
     private final SeatRepository seats;
     private final PriceTierRepository priceTiers;
-    private final SeatLockService seatLocks;
+    private final SeatAvailability seatAvailability;
     private final IdempotencyLockService idempotencyLocks;
     private final OrderWriter orderWriter;
     private final TicketService ticketService;
@@ -89,7 +90,7 @@ public class OrderService {
                         SectionRepository sections,
                         SeatRepository seats,
                         PriceTierRepository priceTiers,
-                        SeatLockService seatLocks,
+                        SeatAvailability seatAvailability,
                         IdempotencyLockService idempotencyLocks,
                         OrderWriter orderWriter,
                         TicketService ticketService,
@@ -104,7 +105,7 @@ public class OrderService {
         this.sections = sections;
         this.seats = seats;
         this.priceTiers = priceTiers;
-        this.seatLocks = seatLocks;
+        this.seatAvailability = seatAvailability;
         this.idempotencyLocks = idempotencyLocks;
         this.orderWriter = orderWriter;
         this.ticketService = ticketService;
@@ -241,7 +242,7 @@ public class OrderService {
         }
 
         String orderNo = "ORD" + UUID.randomUUID().toString().replace("-", "").toUpperCase();
-        if (!seatLocks.lockAll(performance.getId(), seatIds, orderNo)) {
+        if (!seatAvailability.lockAll(performance.getId(), seatIds, orderNo)) {
             throw new ApiException(HttpStatus.CONFLICT, "SEAT_ALREADY_LOCKED",
                     "One or more seats are already locked");
         }
@@ -251,12 +252,12 @@ public class OrderService {
             order = orderWriter.persist(
                     user.getId(), performance.getId(), orderNo, idempotencyKey, total, lines);
         } catch (DataIntegrityViolationException exception) {
-            seatLocks.release(performance.getId(), seatIds, orderNo);
+            seatAvailability.release(performance.getId(), seatIds, orderNo);
             return orders.findByUserIdAndIdempotencyKey(user.getId(), idempotencyKey)
                     .map(saved -> new CreateResult(toResponse(saved), false))
                     .orElseThrow(() -> exception);
         } catch (RuntimeException exception) {
-            seatLocks.release(performance.getId(), seatIds, orderNo);
+            seatAvailability.release(performance.getId(), seatIds, orderNo);
             throw exception;
         }
         // The order is committed; mapping failures must not release its seat locks.
@@ -382,7 +383,7 @@ public class OrderService {
             public void afterCommit() {
                 try {
                     if (!seatIds.isEmpty()) {
-                        seatLocks.release(order.getPerformanceId(), seatIds, order.getOrderNo());
+                        seatAvailability.release(order.getPerformanceId(), seatIds, order.getOrderNo());
                     }
                     for (OrderItem item : generalAdmissionItems) {
                         gaStock.release(order.getPerformanceId(), item.getPriceTierId(), item.getQuantity());
