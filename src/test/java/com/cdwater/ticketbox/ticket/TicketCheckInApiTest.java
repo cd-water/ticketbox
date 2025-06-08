@@ -6,8 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpResponse;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,10 +18,11 @@ class TicketCheckInApiTest extends ApiIntegrationTest {
     @Test
     void validTicketIsCheckedInOnce() throws Exception {
         String admin = adminToken();
-        Setup setup = gaPerformance(admin);
+        GaPerformance setup = gaPerformance(admin, "核销测试演出", 5);
         String user = userToken("checkin_user");
-        long orderId = orderId(user, setup.performanceId(), setup.tierId());
-        String qrPayload = payAndGetQr(user, orderId, setup.tierId());
+        long orderId = idFrom(createGaOrder(
+                user, setup.performanceId(), setup.tierId(), 1, "checkin-" + user.hashCode()).body());
+        String qrPayload = payAndGetQr(user, orderId);
 
         HttpResponse<String> first = checkIn(admin, qrPayload);
         assertThat(first.statusCode()).isEqualTo(200);
@@ -41,10 +40,11 @@ class TicketCheckInApiTest extends ApiIntegrationTest {
     @Test
     void tamperedPayloadIsRejected() throws Exception {
         String admin = adminToken();
-        Setup setup = gaPerformance(admin);
+        GaPerformance setup = gaPerformance(admin, "核销测试演出", 5);
         String user = userToken("tampered_user");
-        long orderId = orderId(user, setup.performanceId(), setup.tierId());
-        String qrPayload = payAndGetQr(user, orderId, setup.tierId());
+        long orderId = idFrom(createGaOrder(
+                user, setup.performanceId(), setup.tierId(), 1, "checkin-" + user.hashCode()).body());
+        String qrPayload = payAndGetQr(user, orderId);
         char last = qrPayload.charAt(qrPayload.length() - 1);
         String tampered = qrPayload.substring(0, qrPayload.length() - 1) + (last == 'a' ? 'b' : 'a');
 
@@ -57,7 +57,7 @@ class TicketCheckInApiTest extends ApiIntegrationTest {
     @Test
     void validSignatureForUnknownTicketIsRejected() throws Exception {
         String admin = adminToken();
-        Setup setup = gaPerformance(admin);
+        GaPerformance setup = gaPerformance(admin, "核销测试演出", 5);
         long issuedAt = Instant.now().getEpochSecond();
         String canonical = "999999|" + setup.performanceId() + "|" + issuedAt;
         String payload = "999999." + setup.performanceId() + "." + issuedAt
@@ -72,10 +72,11 @@ class TicketCheckInApiTest extends ApiIntegrationTest {
     @Test
     void manualTicketNumberIsAcceptedAsFallback() throws Exception {
         String admin = adminToken();
-        Setup setup = gaPerformance(admin);
+        GaPerformance setup = gaPerformance(admin, "核销测试演出", 5);
         String user = userToken("manual_checkin_user");
-        long orderId = orderId(user, setup.performanceId(), setup.tierId());
-        String qrPayload = payAndGetQr(user, orderId, setup.tierId());
+        long orderId = idFrom(createGaOrder(
+                user, setup.performanceId(), setup.tierId(), 1, "checkin-" + user.hashCode()).body());
+        String qrPayload = payAndGetQr(user, orderId);
         String ticketNumber = qrPayload.split("\\.")[0];
 
         HttpResponse<String> first = checkIn(admin, ticketNumber);
@@ -111,66 +112,14 @@ class TicketCheckInApiTest extends ApiIntegrationTest {
         return post("/api/admin/tickets/check-in", "{\"payload\":\"" + payload + "\"}", token);
     }
 
-    private Setup gaPerformance(String admin) throws Exception {
-        HttpResponse<String> event = post("/api/admin/events",
-                "{\"title\":\"核销测试演出\",\"description\":\"演出简介\",\"city\":\"上海\"}", admin);
-        assertThat(event.statusCode()).isEqualTo(201);
-        long eventId = idFrom(event.body());
-        post("/api/admin/events/" + eventId + "/publish", "", admin);
-
-        HttpResponse<String> performance = post("/api/admin/performances",
-                "{\"eventId\":" + eventId + ","
-                        + "\"startsAt\":\"2026-12-01T12:00:00Z\","
-                        + "\"venueName\":\"核销测试场馆\","
-                        + "\"venueAddress\":\"浦东新区世博大道1200号\","
-                        + "\"saleStartAt\":\"2026-11-20T02:00:00Z\"}",
-                admin);
-        long performanceId = idFrom(performance.body());
-
-        HttpResponse<String> tier = post("/api/admin/price-tiers",
-                "{\"performanceId\":" + performanceId + ",\"name\":\"内场\",\"price\":100.00,\"stock\":5}",
-                admin);
-        assertThat(tier.statusCode()).isEqualTo(201);
-        return new Setup(performanceId, idFrom(tier.body()));
-    }
-
-    private long orderId(String user, long performanceId, long tierId) throws Exception {
-        HttpResponse<String> order = post("/api/orders",
-                "{\"performanceId\":" + performanceId + ",\"priceTierId\":" + tierId + ",\"quantity\":1}",
-                user,
-                Map.of("Idempotency-Key", "checkin-" + user.hashCode()));
-        assertThat(order.statusCode()).as(order.body()).isEqualTo(201);
-        return idFrom(order.body());
-    }
-
-    private String payAndGetQr(String user, long orderId, long tierId) throws Exception {
-        HttpResponse<String> payment = post("/api/orders/" + orderId + "/payments",
-                "{\"attendees\":[{\"name\":\"张三\",\"idNo\":\"310101199001011234\"}]}",
-                user);
+    private String payAndGetQr(String user, long orderId) throws Exception {
+        HttpResponse<String> payment = payOrder(user, orderId, gaAttendees("张三"));
         assertThat(payment.statusCode()).isEqualTo(201);
 
-        HttpResponse<String> order = null;
-        for (int attempt = 0; attempt < 50; attempt++) {
-            Thread.sleep(100);
-            order = get("/api/orders/" + orderId, user);
-            if (order.body().contains("\"status\":\"PAID\"")) {
-                break;
-            }
-        }
+        HttpResponse<String> order = waitForOrderStatus(user, orderId, "PAID");
         assertThat(order).isNotNull();
         Matcher matcher = Pattern.compile("\"qrPayload\":\"([^\"]+)\"").matcher(order.body());
         assertThat(matcher.find()).isTrue();
         return matcher.group(1);
-    }
-
-    private String userToken(String username) throws Exception {
-        post("/api/auth/register", "{\"username\":\"" + username + "\",\"password\":\"secret123\"}");
-        HttpResponse<String> login = post("/api/auth/login",
-                "{\"username\":\"" + username + "\",\"password\":\"secret123\"}");
-        assertThat(login.statusCode()).isEqualTo(200);
-        return tokenFrom(login.body());
-    }
-
-    private record Setup(long performanceId, long tierId) {
     }
 }

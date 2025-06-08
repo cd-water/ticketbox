@@ -85,10 +85,7 @@ class EventApiTest extends ApiIntegrationTest {
 
     @Test
     void regularUserCannotManageEvents() throws Exception {
-        post("/api/auth/register", "{\"username\":\"event_user\",\"password\":\"secret123\"}");
-        HttpResponse<String> login = post("/api/auth/login",
-                "{\"username\":\"event_user\",\"password\":\"secret123\"}");
-        String token = tokenFrom(login.body());
+        String token = userToken("event_user");
 
         HttpResponse<String> response = get("/api/admin/events", token);
 

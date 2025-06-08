@@ -4,14 +4,10 @@ import com.cdwater.ticketbox.ApiIntegrationTest;
 import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpResponse;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,43 +16,43 @@ class OrderApiTest extends ApiIntegrationTest {
     @Test
     void createOrderLocksSeats() throws Exception {
         String admin = adminToken();
-        Setup setup = seatedPerformance(admin, "下单锁座测试演出");
+        SeatedPerformance setup = seatedPerformance(admin, "下单锁座测试演出");
         String user = userToken("order_user");
         List<Long> chosen = setup.seatIds().subList(0, 2);
 
-        HttpResponse<String> order = createOrder(user, setup.performanceId(), chosen, "key-create-1");
+        HttpResponse<String> order = createSeatedOrder(user, setup.performanceId(), chosen, "key-create-1");
 
         assertThat(order.statusCode()).isEqualTo(201);
         assertThat(order.body())
                 .contains("\"status\":\"PENDING_PAYMENT\"")
                 .contains("\"totalAmount\":200.00");
-        assertThat(lockedSeats(setup.performanceId())).isEqualTo(2);
+        assertThat(seatStatusCount(setup.performanceId(), "LOCKED")).isEqualTo(2);
 
         HttpResponse<String> mine = get("/api/orders", user);
         assertThat(mine.statusCode()).isEqualTo(200);
-        assertThat(mine.body()).contains(orderNoFrom(order.body()));
+        assertThat(mine.body()).contains(jsonField(order.body(), "orderNo"));
     }
 
     @Test
     void idempotencyKeyReturnsSameOrder() throws Exception {
         String admin = adminToken();
-        Setup setup = seatedPerformance(admin, "幂等测试演出");
+        SeatedPerformance setup = seatedPerformance(admin, "幂等测试演出");
         String user = userToken("idempotent_user");
         List<Long> chosen = setup.seatIds().subList(0, 2);
 
-        HttpResponse<String> first = createOrder(user, setup.performanceId(), chosen, "same-key");
-        HttpResponse<String> second = createOrder(user, setup.performanceId(), chosen, "same-key");
+        HttpResponse<String> first = createSeatedOrder(user, setup.performanceId(), chosen, "same-key");
+        HttpResponse<String> second = createSeatedOrder(user, setup.performanceId(), chosen, "same-key");
 
         assertThat(first.statusCode()).isEqualTo(201);
         assertThat(second.statusCode()).isEqualTo(200);
         assertThat(idFrom(second.body())).isEqualTo(idFrom(first.body()));
-        assertThat(lockedSeats(setup.performanceId())).isEqualTo(2);
+        assertThat(seatStatusCount(setup.performanceId(), "LOCKED")).isEqualTo(2);
     }
 
     @Test
     void concurrentSameIdempotencyKeyReturnsOneOrder() throws Exception {
         String admin = adminToken();
-        Setup setup = seatedPerformance(admin, "并发幂等测试演出");
+        SeatedPerformance setup = seatedPerformance(admin, "并发幂等测试演出");
         String user = userToken("concurrent_idem_user");
         List<Long> firstSeat = List.of(setup.seatIds().get(0));
         List<Long> secondSeat = List.of(setup.seatIds().get(1));
@@ -65,11 +61,11 @@ class OrderApiTest extends ApiIntegrationTest {
         var barrier = new CyclicBarrier(2);
         Callable<HttpResponse<String>> attemptA = () -> {
             barrier.await();
-            return createOrder(user, setup.performanceId(), firstSeat, "concurrent-key");
+            return createSeatedOrder(user, setup.performanceId(), firstSeat, "concurrent-key");
         };
         Callable<HttpResponse<String>> attemptB = () -> {
             barrier.await();
-            return createOrder(user, setup.performanceId(), secondSeat, "concurrent-key");
+            return createSeatedOrder(user, setup.performanceId(), secondSeat, "concurrent-key");
         };
         try {
             var a = pool.submit(attemptA);
@@ -81,7 +77,7 @@ class OrderApiTest extends ApiIntegrationTest {
                     .stream().sorted().toList();
             assertThat(statuses).containsExactly(200, 201);
             assertThat(idFrom(responseA.body())).isEqualTo(idFrom(responseB.body()));
-            assertThat(lockedSeats(setup.performanceId())).isEqualTo(1);
+            assertThat(seatStatusCount(setup.performanceId(), "LOCKED")).isEqualTo(1);
         } finally {
             pool.shutdown();
         }
@@ -90,25 +86,25 @@ class OrderApiTest extends ApiIntegrationTest {
     @Test
     void purchaseLimitIsEnforced() throws Exception {
         String admin = adminToken();
-        Setup setup = seatedPerformance(admin, "限购测试演出");
+        SeatedPerformance setup = seatedPerformance(admin, "限购测试演出");
         String user = userToken("quota_user");
 
-        HttpResponse<String> four = createOrder(user, setup.performanceId(),
+        HttpResponse<String> four = createSeatedOrder(user, setup.performanceId(),
                 setup.seatIds().subList(0, 4), "quota-key-1");
         assertThat(four.statusCode()).isEqualTo(201);
 
-        HttpResponse<String> extra = createOrder(user, setup.performanceId(),
+        HttpResponse<String> extra = createSeatedOrder(user, setup.performanceId(),
                 setup.seatIds().subList(4, 6), "quota-key-2");
 
         assertThat(extra.statusCode()).isEqualTo(409);
         assertThat(extra.body()).contains("PURCHASE_LIMIT_EXCEEDED");
-        assertThat(lockedSeats(setup.performanceId())).isEqualTo(4);
+        assertThat(seatStatusCount(setup.performanceId(), "LOCKED")).isEqualTo(4);
     }
 
     @Test
     void concurrentSeatSelectionOnlyOneWins() throws Exception {
         String admin = adminToken();
-        Setup setup = seatedPerformance(admin, "并发抢座测试演出");
+        SeatedPerformance setup = seatedPerformance(admin, "并发抢座测试演出");
         String firstUser = userToken("race_user_a");
         String secondUser = userToken("race_user_b");
         List<Long> seat = List.of(setup.seatIds().get(0));
@@ -117,11 +113,11 @@ class OrderApiTest extends ApiIntegrationTest {
         var barrier = new CyclicBarrier(2);
         Callable<HttpResponse<String>> attemptA = () -> {
             barrier.await();
-            return createOrder(firstUser, setup.performanceId(), seat, "race-key-a");
+            return createSeatedOrder(firstUser, setup.performanceId(), seat, "race-key-a");
         };
         Callable<HttpResponse<String>> attemptB = () -> {
             barrier.await();
-            return createOrder(secondUser, setup.performanceId(), seat, "race-key-b");
+            return createSeatedOrder(secondUser, setup.performanceId(), seat, "race-key-b");
         };
         try {
             var a = pool.submit(attemptA);
@@ -142,31 +138,31 @@ class OrderApiTest extends ApiIntegrationTest {
     @Test
     void cancelReleasesSeatAndQuota() throws Exception {
         String admin = adminToken();
-        Setup setup = seatedPerformance(admin, "取消订单测试演出");
+        SeatedPerformance setup = seatedPerformance(admin, "取消订单测试演出");
         String user = userToken("cancel_user");
         List<Long> chosen = setup.seatIds().subList(0, 2);
 
-        HttpResponse<String> order = createOrder(user, setup.performanceId(), chosen, "cancel-key-1");
+        HttpResponse<String> order = createSeatedOrder(user, setup.performanceId(), chosen, "cancel-key-1");
         long orderId = idFrom(order.body());
-        assertThat(lockedSeats(setup.performanceId())).isEqualTo(2);
+        assertThat(seatStatusCount(setup.performanceId(), "LOCKED")).isEqualTo(2);
 
         HttpResponse<String> cancelled = post("/api/orders/" + orderId + "/cancel", "", user);
         assertThat(cancelled.statusCode()).isEqualTo(200);
         assertThat(cancelled.body()).contains("CANCELLED");
-        assertThat(lockedSeats(setup.performanceId())).isZero();
+        assertThat(seatStatusCount(setup.performanceId(), "LOCKED")).isZero();
 
-        HttpResponse<String> reorder = createOrder(user, setup.performanceId(), chosen, "cancel-key-2");
+        HttpResponse<String> reorder = createSeatedOrder(user, setup.performanceId(), chosen, "cancel-key-2");
         assertThat(reorder.statusCode()).isEqualTo(201);
     }
 
     @Test
     void unknownSeatIsRejected() throws Exception {
         String admin = adminToken();
-        Setup first = seatedPerformance(admin, "座位归属测试演出");
-        Setup second = seatedPerformance(admin, "座位归属测试演出二");
+        SeatedPerformance first = seatedPerformance(admin, "座位归属测试演出");
+        SeatedPerformance second = seatedPerformance(admin, "座位归属测试演出二");
         String user = userToken("seat_owner_user");
 
-        HttpResponse<String> order = createOrder(user, first.performanceId(),
+        HttpResponse<String> order = createSeatedOrder(user, first.performanceId(),
                 List.of(second.seatIds().get(0)), "foreign-seat-key");
 
         assertThat(order.statusCode()).isEqualTo(404);
@@ -176,11 +172,12 @@ class OrderApiTest extends ApiIntegrationTest {
     @Test
     void missingIdempotencyKeyIsRejected() throws Exception {
         String admin = adminToken();
-        Setup setup = seatedPerformance(admin, "幂等头测试演出");
+        SeatedPerformance setup = seatedPerformance(admin, "幂等头测试演出");
         String user = userToken("no_key_user");
 
         HttpResponse<String> order = post("/api/orders",
-                "{\"performanceId\":" + setup.performanceId() + ",\"seatIds\":[" + setup.seatIds().get(0) + "]}",
+                "{\"performanceId\":" + setup.performanceId()
+                        + ",\"seatIds\":[" + setup.seatIds().get(0) + "]}",
                 user);
 
         assertThat(order.statusCode()).isEqualTo(400);
@@ -190,99 +187,15 @@ class OrderApiTest extends ApiIntegrationTest {
     @Test
     void cannotReadAnotherUsersOrder() throws Exception {
         String admin = adminToken();
-        Setup setup = seatedPerformance(admin, "订单归属测试演出");
+        SeatedPerformance setup = seatedPerformance(admin, "订单归属测试演出");
         String owner = userToken("order_owner");
         String stranger = userToken("order_stranger");
-        long orderId = idFrom(createOrder(owner, setup.performanceId(),
+        long orderId = idFrom(createSeatedOrder(owner, setup.performanceId(),
                 List.of(setup.seatIds().get(0)), "owner-key").body());
 
         HttpResponse<String> response = get("/api/orders/" + orderId, stranger);
 
         assertThat(response.statusCode()).isEqualTo(404);
         assertThat(response.body()).contains("ORDER_NOT_FOUND");
-    }
-
-    private Setup seatedPerformance(String admin, String title) throws Exception {
-        HttpResponse<String> created = post("/api/admin/events",
-                "{\"title\":\"" + title + "\",\"description\":\"演出简介\",\"city\":\"上海\"}", admin);
-        assertThat(created.statusCode()).isEqualTo(201);
-        long eventId = idFrom(created.body());
-        post("/api/admin/events/" + eventId + "/publish", "", admin);
-
-        HttpResponse<String> performance = post("/api/admin/performances",
-                "{\"eventId\":" + eventId + ","
-                        + "\"startsAt\":\"2026-12-01T12:00:00Z\","
-                        + "\"venueName\":\"订单测试场馆\","
-                        + "\"venueAddress\":\"浦东新区世博大道1200号\","
-                        + "\"saleStartAt\":\"2026-11-20T02:00:00Z\"}",
-                admin);
-        assertThat(performance.statusCode()).isEqualTo(201);
-        long performanceId = idFrom(performance.body());
-
-        HttpResponse<String> tier = post("/api/admin/price-tiers",
-                "{\"performanceId\":" + performanceId + ",\"name\":\"内场\",\"price\":100.00,\"stock\":0}",
-                admin);
-        assertThat(tier.statusCode()).isEqualTo(201);
-        long tierId = idFrom(tier.body());
-
-        HttpResponse<String> section = post("/api/admin/performances/" + performanceId + "/sections",
-                "{\"name\":\"A区\",\"priceTierId\":" + tierId + ",\"rowCount\":2,\"seatsPerRow\":3}",
-                admin);
-        assertThat(section.statusCode()).isEqualTo(201);
-
-        return new Setup(performanceId, seatIdsFor(performanceId));
-    }
-
-    private List<Long> seatIdsFor(long performanceId) throws Exception {
-        String body = get("/api/performances/" + performanceId + "/seat-map", null).body();
-        int start = body.indexOf("\"seats\":[");
-        int end = body.indexOf(']', start);
-        Matcher matcher = Pattern.compile("\"id\":(\\d+)").matcher(body.substring(start, end));
-        List<Long> ids = new ArrayList<>();
-        while (matcher.find()) {
-            ids.add(Long.parseLong(matcher.group(1)));
-        }
-        return ids;
-    }
-
-    private HttpResponse<String> createOrder(String userToken, long performanceId,
-                                             List<Long> seatIds, String idempotencyKey) throws Exception {
-        String seats = seatIds.stream().map(String::valueOf).reduce((left, right) -> left + "," + right).orElse("");
-        return post("/api/orders",
-                "{\"performanceId\":" + performanceId + ",\"seatIds\":[" + seats + "]}",
-                userToken,
-                Map.of("Idempotency-Key", idempotencyKey));
-    }
-
-    private String userToken(String username) throws Exception {
-        HttpResponse<String> register = post("/api/auth/register",
-                "{\"username\":\"" + username + "\",\"password\":\"secret123\"}");
-        assertThat(register.statusCode()).isIn(201, 409);
-        HttpResponse<String> login = post("/api/auth/login",
-                "{\"username\":\"" + username + "\",\"password\":\"secret123\"}");
-        assertThat(login.statusCode()).isEqualTo(200);
-        return tokenFrom(login.body());
-    }
-
-    private int lockedSeats(long performanceId) throws Exception {
-        String body = get("/api/performances/" + performanceId + "/seat-map", null).body();
-        return occurrences(body, "\"status\":\"LOCKED\"");
-    }
-
-    private static String orderNoFrom(String body) {
-        return jsonField(body, "orderNo");
-    }
-
-    private static int occurrences(String body, String token) {
-        int count = 0;
-        int index = body.indexOf(token);
-        while (index >= 0) {
-            count++;
-            index = body.indexOf(token, index + token.length());
-        }
-        return count;
-    }
-
-    private record Setup(long performanceId, List<Long> seatIds) {
     }
 }
