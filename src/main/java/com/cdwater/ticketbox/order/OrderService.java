@@ -268,27 +268,27 @@ public class OrderService {
     public OrderResponse cancel(String username, Long orderId) {
         UserAccount user = requireUser(username);
         Order order = orders.findByIdAndUserId(orderId, user.getId()).orElseThrow(OrderService::orderNotFound);
-
-        int cancelled = orders.cancelIfPending(orderId, OrderStatus.CANCELLED, OrderStatus.PENDING_PAYMENT);
-        if (cancelled == 0) {
+        if (!cancelAndRelease(order)) {
             throw new ApiException(HttpStatus.CONFLICT, "ORDER_NOT_CANCELLABLE", "Order is not awaiting payment");
         }
-        payments.expirePendingForOrder(orderId, PaymentStatus.EXPIRED, PaymentStatus.PENDING);
-        releaseReservations(order, orderItems.findByOrderId(orderId));
         return toResponse(orders.findById(orderId).orElseThrow(OrderService::orderNotFound));
     }
 
     @Transactional
     public void expire(Long orderId) {
         Order order = orders.findById(orderId).orElse(null);
-        if (order == null) {
-            return;
+        if (order != null) {
+            cancelAndRelease(order);
         }
-        if (orders.cancelIfPending(orderId, OrderStatus.CANCELLED, OrderStatus.PENDING_PAYMENT) == 0) {
-            return;
+    }
+
+    private boolean cancelAndRelease(Order order) {
+        if (orders.cancelIfPending(order.getId(), OrderStatus.CANCELLED, OrderStatus.PENDING_PAYMENT) == 0) {
+            return false;
         }
-        payments.expirePendingForOrder(orderId, PaymentStatus.EXPIRED, PaymentStatus.PENDING);
-        releaseReservations(order, orderItems.findByOrderId(orderId));
+        payments.expirePendingForOrder(order.getId(), PaymentStatus.EXPIRED, PaymentStatus.PENDING);
+        releaseReservations(order, orderItems.findByOrderId(order.getId()));
+        return true;
     }
 
     @Transactional(readOnly = true)

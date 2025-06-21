@@ -9,6 +9,7 @@ import com.cdwater.ticketbox.order.OrderAttendeeRepository;
 import com.cdwater.ticketbox.order.OrderItem;
 import com.cdwater.ticketbox.order.OrderItemRepository;
 import com.cdwater.ticketbox.order.OrderRepository;
+import com.cdwater.ticketbox.order.OrderService;
 import com.cdwater.ticketbox.order.OrderStatus;
 import com.cdwater.ticketbox.seat.SeatAvailability;
 import com.cdwater.ticketbox.ticket.TicketIssuer;
@@ -35,6 +36,7 @@ public class PaymentService {
 
     private final UserAccountRepository users;
     private final OrderRepository orders;
+    private final OrderService orderService;
     private final OrderItemRepository orderItems;
     private final OrderAttendeeRepository orderAttendees;
     private final PaymentRepository payments;
@@ -45,6 +47,7 @@ public class PaymentService {
 
     public PaymentService(UserAccountRepository users,
                           OrderRepository orders,
+                          OrderService orderService,
                           OrderItemRepository orderItems,
                           OrderAttendeeRepository orderAttendees,
                           PaymentRepository payments,
@@ -54,6 +57,7 @@ public class PaymentService {
                           StringRedisTemplate redis) {
         this.users = users;
         this.orders = orders;
+        this.orderService = orderService;
         this.orderItems = orderItems;
         this.orderAttendees = orderAttendees;
         this.payments = payments;
@@ -153,7 +157,7 @@ public class PaymentService {
             return;
         }
         if (!order.getExpiresAt().isAfter(now)) {
-            payments.updateStatusIfCurrent(payment.getId(), PaymentStatus.EXPIRED, PaymentStatus.PENDING);
+            orderService.expire(order.getId());
             return;
         }
 

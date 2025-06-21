@@ -33,7 +33,7 @@ class PaymentExpiryApiTest extends ApiIntegrationTest {
         Thread.sleep(6500);
 
         HttpResponse<String> afterCallback = get("/api/orders/" + orderId, user);
-        assertThat(afterCallback.body()).doesNotContain("\"status\":\"PAID\"");
+        assertThat(afterCallback.body()).contains("\"status\":\"CANCELLED\"");
         assertThat(occurrences(afterCallback.body(), "\"qrPayload\"")).isZero();
     }
 }
