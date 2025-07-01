@@ -1,6 +1,6 @@
 package com.cdwater.ticketbox.seat;
 
-import com.cdwater.ticketbox.ApiIntegrationTest;
+import com.cdwater.ticketbox.support.ApiIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;

@@ -1,4 +1,6 @@
-package com.cdwater.ticketbox.common;
+package com.cdwater.ticketbox.common.web;
+
+import com.cdwater.ticketbox.common.ApiException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;

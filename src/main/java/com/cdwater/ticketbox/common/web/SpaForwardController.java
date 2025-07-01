@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.common;
+package com.cdwater.ticketbox.common.web;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;

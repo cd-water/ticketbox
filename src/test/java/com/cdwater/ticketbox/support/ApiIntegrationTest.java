@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox;
+package com.cdwater.ticketbox.support;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;

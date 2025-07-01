@@ -1,6 +1,6 @@
 package com.cdwater.ticketbox.order;
 
-import com.cdwater.ticketbox.ApiIntegrationTest;
+import com.cdwater.ticketbox.support.ApiIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.TestPropertySource;
 

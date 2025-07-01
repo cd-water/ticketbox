@@ -1,6 +1,6 @@
 package com.cdwater.ticketbox.payment;
 
-import com.cdwater.ticketbox.ApiIntegrationTest;
+import com.cdwater.ticketbox.support.ApiIntegrationTest;
 import com.cdwater.ticketbox.common.HmacSigner;
 import org.junit.jupiter.api.Test;
 

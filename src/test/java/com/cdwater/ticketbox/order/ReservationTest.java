@@ -1,6 +1,6 @@
 package com.cdwater.ticketbox.order;
 
-import com.cdwater.ticketbox.ApiIntegrationTest;
+import com.cdwater.ticketbox.support.ApiIntegrationTest;
 import com.cdwater.ticketbox.auth.UserAccount;
 import com.cdwater.ticketbox.auth.UserAccountRepository;
 import com.cdwater.ticketbox.performance.PriceTierRepository;
