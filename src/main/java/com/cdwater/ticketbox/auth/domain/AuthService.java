@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.auth;
+package com.cdwater.ticketbox.auth.domain;
 
 import com.cdwater.ticketbox.common.ApiException;
 import org.springframework.dao.DataIntegrityViolationException;

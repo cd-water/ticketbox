@@ -1,7 +1,7 @@
 package com.cdwater.ticketbox.payment;
 
-import com.cdwater.ticketbox.auth.UserAccount;
-import com.cdwater.ticketbox.auth.UserAccountRepository;
+import com.cdwater.ticketbox.auth.domain.UserAccount;
+import com.cdwater.ticketbox.auth.domain.UserAccountRepository;
 import com.cdwater.ticketbox.common.ApiException;
 import com.cdwater.ticketbox.order.Order;
 import com.cdwater.ticketbox.order.OrderAttendee;

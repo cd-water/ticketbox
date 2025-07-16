@@ -1,6 +1,6 @@
 package com.cdwater.ticketbox.order;
 
-import com.cdwater.ticketbox.auth.UserAccount;
+import com.cdwater.ticketbox.auth.domain.UserAccount;
 import com.cdwater.ticketbox.common.ApiException;
 import com.cdwater.ticketbox.performance.GaStockService;
 import com.cdwater.ticketbox.performance.Performance;

@@ -1,4 +1,6 @@
-package com.cdwater.ticketbox.auth;
+package com.cdwater.ticketbox.auth.web;
+
+import com.cdwater.ticketbox.auth.domain.UserProfileResponse;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;

@@ -1,8 +1,8 @@
 package com.cdwater.ticketbox.order;
 
 import com.cdwater.ticketbox.support.ApiIntegrationTest;
-import com.cdwater.ticketbox.auth.UserAccount;
-import com.cdwater.ticketbox.auth.UserAccountRepository;
+import com.cdwater.ticketbox.auth.domain.UserAccount;
+import com.cdwater.ticketbox.auth.domain.UserAccountRepository;
 import com.cdwater.ticketbox.performance.PriceTierRepository;
 import com.cdwater.ticketbox.seat.SeatAvailability;
 import com.cdwater.ticketbox.seat.SeatStatus;

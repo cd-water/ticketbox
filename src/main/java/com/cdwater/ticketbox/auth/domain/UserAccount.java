@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.auth;
+package com.cdwater.ticketbox.auth.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

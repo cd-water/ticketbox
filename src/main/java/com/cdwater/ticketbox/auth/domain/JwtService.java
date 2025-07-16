@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.auth;
+package com.cdwater.ticketbox.auth.domain;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

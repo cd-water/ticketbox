@@ -1,4 +1,6 @@
-package com.cdwater.ticketbox.auth;
+package com.cdwater.ticketbox.auth.web;
+
+import com.cdwater.ticketbox.auth.domain.JwtService;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;

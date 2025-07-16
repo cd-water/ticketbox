@@ -1,5 +1,7 @@
 package com.cdwater.ticketbox.auth;
 
+import com.cdwater.ticketbox.auth.web.JwtAuthenticationFilter;
+
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;

@@ -1,8 +1,8 @@
 package com.cdwater.ticketbox.dev;
 
-import com.cdwater.ticketbox.auth.Role;
-import com.cdwater.ticketbox.auth.UserAccount;
-import com.cdwater.ticketbox.auth.UserAccountRepository;
+import com.cdwater.ticketbox.auth.domain.Role;
+import com.cdwater.ticketbox.auth.domain.UserAccount;
+import com.cdwater.ticketbox.auth.domain.UserAccountRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;

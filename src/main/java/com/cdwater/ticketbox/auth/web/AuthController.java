@@ -1,4 +1,9 @@
-package com.cdwater.ticketbox.auth;
+package com.cdwater.ticketbox.auth.web;
+
+import com.cdwater.ticketbox.auth.domain.AuthService;
+import com.cdwater.ticketbox.auth.domain.LoginResponse;
+import com.cdwater.ticketbox.auth.domain.UserAccount;
+import com.cdwater.ticketbox.auth.domain.UserProfileResponse;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
