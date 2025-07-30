@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.event;
+package com.cdwater.ticketbox.event.domain;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

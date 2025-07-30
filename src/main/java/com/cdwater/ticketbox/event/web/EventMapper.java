@@ -1,5 +1,9 @@
-package com.cdwater.ticketbox.event;
+package com.cdwater.ticketbox.event.web;
 
+import com.cdwater.ticketbox.event.domain.AdminEventResponse;
+import com.cdwater.ticketbox.event.domain.Event;
+import com.cdwater.ticketbox.event.domain.EventDetail;
+import com.cdwater.ticketbox.event.domain.EventSummary;
 import com.cdwater.ticketbox.performance.PerformanceSummary;
 import com.cdwater.ticketbox.storage.StorageService;
 import org.springframework.stereotype.Component;

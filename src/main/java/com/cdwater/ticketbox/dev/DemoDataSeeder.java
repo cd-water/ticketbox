@@ -1,7 +1,7 @@
 package com.cdwater.ticketbox.dev;
 
-import com.cdwater.ticketbox.event.Event;
-import com.cdwater.ticketbox.event.EventRepository;
+import com.cdwater.ticketbox.event.domain.Event;
+import com.cdwater.ticketbox.event.domain.EventRepository;
 import com.cdwater.ticketbox.performance.Performance;
 import com.cdwater.ticketbox.performance.PerformanceRepository;
 import com.cdwater.ticketbox.performance.PriceTier;

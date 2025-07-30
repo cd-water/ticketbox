@@ -1,7 +1,10 @@
-package com.cdwater.ticketbox.event;
+package com.cdwater.ticketbox.event.web;
 
 import com.cdwater.ticketbox.common.PageResponse;
 import com.cdwater.ticketbox.common.Paging;
+import com.cdwater.ticketbox.event.domain.AdminEventResponse;
+import com.cdwater.ticketbox.event.domain.EventCommand;
+import com.cdwater.ticketbox.event.domain.EventService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;

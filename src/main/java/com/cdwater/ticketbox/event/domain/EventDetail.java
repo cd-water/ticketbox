@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.event;
+package com.cdwater.ticketbox.event.domain;
 
 import com.cdwater.ticketbox.performance.PerformanceSummary;
 

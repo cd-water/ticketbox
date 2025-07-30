@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.event;
+package com.cdwater.ticketbox.event.domain;
 
 import com.cdwater.ticketbox.common.ApiException;
 import org.springframework.data.domain.Page;

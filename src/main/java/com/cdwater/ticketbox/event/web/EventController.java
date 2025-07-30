@@ -1,7 +1,11 @@
-package com.cdwater.ticketbox.event;
+package com.cdwater.ticketbox.event.web;
 
 import com.cdwater.ticketbox.common.PageResponse;
 import com.cdwater.ticketbox.common.Paging;
+import com.cdwater.ticketbox.event.domain.Event;
+import com.cdwater.ticketbox.event.domain.EventDetail;
+import com.cdwater.ticketbox.event.domain.EventService;
+import com.cdwater.ticketbox.event.domain.EventSummary;
 import com.cdwater.ticketbox.performance.PerformanceService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.event;
+package com.cdwater.ticketbox.event.domain;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

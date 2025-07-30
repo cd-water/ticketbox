@@ -1,7 +1,7 @@
 package com.cdwater.ticketbox.performance;
 
 import com.cdwater.ticketbox.common.ApiException;
-import com.cdwater.ticketbox.event.EventRepository;
+import com.cdwater.ticketbox.event.domain.EventRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
