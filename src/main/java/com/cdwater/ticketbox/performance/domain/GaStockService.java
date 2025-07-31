@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.performance;
+package com.cdwater.ticketbox.performance.domain;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;

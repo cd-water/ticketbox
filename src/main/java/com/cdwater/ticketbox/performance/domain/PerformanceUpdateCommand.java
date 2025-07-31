@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.performance;
+package com.cdwater.ticketbox.performance.domain;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

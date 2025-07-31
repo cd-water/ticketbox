@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.performance;
+package com.cdwater.ticketbox.performance.domain;
 
 import com.cdwater.ticketbox.common.ApiException;
 import com.cdwater.ticketbox.event.domain.EventRepository;
@@ -50,9 +50,9 @@ public class PerformanceService {
     }
 
     @Transactional
-    public Performance updateWaitingRoom(Long id, boolean enabled, int admissionRate, int tokenTtlSeconds) {
+    public Performance updateWaitingRoom(Long id, WaitingRoomCommand command) {
         Performance performance = require(id);
-        performance.updateWaitingRoom(enabled, admissionRate, tokenTtlSeconds);
+        performance.updateWaitingRoom(command.enabled(), command.admissionRate(), command.tokenTtlSeconds());
         return performance;
     }
 

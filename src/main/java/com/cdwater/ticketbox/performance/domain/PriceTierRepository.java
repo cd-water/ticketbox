@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.performance;
+package com.cdwater.ticketbox.performance.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

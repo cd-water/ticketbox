@@ -1,7 +1,7 @@
 package com.cdwater.ticketbox.order;
 
 import com.cdwater.ticketbox.common.ApiException;
-import com.cdwater.ticketbox.performance.PriceTierRepository;
+import com.cdwater.ticketbox.performance.domain.PriceTierRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;

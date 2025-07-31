@@ -1,5 +1,8 @@
-package com.cdwater.ticketbox.performance;
+package com.cdwater.ticketbox.performance.web;
 
+import com.cdwater.ticketbox.performance.domain.SectionCommand;
+import com.cdwater.ticketbox.performance.domain.SectionService;
+import com.cdwater.ticketbox.performance.domain.SectionSummary;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;

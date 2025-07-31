@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.performance;
+package com.cdwater.ticketbox.performance.domain;
 
 public record SectionSummary(
         Long id,

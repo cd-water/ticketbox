@@ -2,10 +2,10 @@ package com.cdwater.ticketbox.dev;
 
 import com.cdwater.ticketbox.event.domain.Event;
 import com.cdwater.ticketbox.event.domain.EventRepository;
-import com.cdwater.ticketbox.performance.Performance;
-import com.cdwater.ticketbox.performance.PerformanceRepository;
-import com.cdwater.ticketbox.performance.PriceTier;
-import com.cdwater.ticketbox.performance.PriceTierRepository;
+import com.cdwater.ticketbox.performance.domain.Performance;
+import com.cdwater.ticketbox.performance.domain.PerformanceRepository;
+import com.cdwater.ticketbox.performance.domain.PriceTier;
+import com.cdwater.ticketbox.performance.domain.PriceTierRepository;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;

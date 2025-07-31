@@ -1,9 +1,11 @@
-package com.cdwater.ticketbox.performance;
+package com.cdwater.ticketbox.performance.web;
 
+import com.cdwater.ticketbox.performance.domain.PerformanceCommand;
+import com.cdwater.ticketbox.performance.domain.PerformanceService;
+import com.cdwater.ticketbox.performance.domain.PerformanceSummary;
+import com.cdwater.ticketbox.performance.domain.PerformanceUpdateCommand;
+import com.cdwater.ticketbox.performance.domain.WaitingRoomCommand;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,12 +22,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/performances")
 public class AdminPerformanceController {
-
-    public record WaitingRoomCommand(
-            @NotNull Boolean enabled,
-            @Min(1) @Max(1000) int admissionRate,
-            @Min(60) @Max(3600) int tokenTtlSeconds) {
-    }
 
     private final PerformanceService performanceService;
 
@@ -47,8 +43,7 @@ public class AdminPerformanceController {
     @PutMapping("/{id}/waiting-room")
     public PerformanceSummary updateWaitingRoom(@PathVariable Long id,
                                                 @Valid @RequestBody WaitingRoomCommand command) {
-        return performanceService.toSummary(performanceService.updateWaitingRoom(
-                id, command.enabled(), command.admissionRate(), command.tokenTtlSeconds()));
+        return performanceService.toSummary(performanceService.updateWaitingRoom(id, command));
     }
 
     @GetMapping

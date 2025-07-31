@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.performance;
+package com.cdwater.ticketbox.performance.domain;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

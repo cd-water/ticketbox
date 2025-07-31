@@ -1,11 +1,11 @@
 package com.cdwater.ticketbox.ticket;
 
-import com.cdwater.ticketbox.performance.PriceTier;
-import com.cdwater.ticketbox.performance.PriceTierRepository;
-import com.cdwater.ticketbox.performance.Seat;
-import com.cdwater.ticketbox.performance.SeatRepository;
-import com.cdwater.ticketbox.performance.Section;
-import com.cdwater.ticketbox.performance.SectionRepository;
+import com.cdwater.ticketbox.performance.domain.PriceTier;
+import com.cdwater.ticketbox.performance.domain.PriceTierRepository;
+import com.cdwater.ticketbox.performance.domain.Seat;
+import com.cdwater.ticketbox.performance.domain.SeatRepository;
+import com.cdwater.ticketbox.performance.domain.Section;
+import com.cdwater.ticketbox.performance.domain.SectionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

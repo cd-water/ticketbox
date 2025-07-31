@@ -1,7 +1,7 @@
 package com.cdwater.ticketbox.seat;
 
-import com.cdwater.ticketbox.performance.PriceTierView;
-import com.cdwater.ticketbox.performance.SeatingMode;
+import com.cdwater.ticketbox.performance.domain.PriceTierView;
+import com.cdwater.ticketbox.performance.domain.SeatingMode;
 
 import java.util.List;
 

@@ -1,6 +1,6 @@
 package com.cdwater.ticketbox.event.domain;
 
-import com.cdwater.ticketbox.performance.PerformanceSummary;
+import com.cdwater.ticketbox.performance.domain.PerformanceSummary;
 
 import java.util.List;
 
