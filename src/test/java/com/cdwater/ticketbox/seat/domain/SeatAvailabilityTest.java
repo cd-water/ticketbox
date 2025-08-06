@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.seat;
+package com.cdwater.ticketbox.seat.domain;
 
 import com.cdwater.ticketbox.support.ApiIntegrationTest;
 import org.junit.jupiter.api.Test;

@@ -1,6 +1,6 @@
 package com.cdwater.ticketbox.order;
 
-import com.cdwater.ticketbox.seat.SeatAvailability;
+import com.cdwater.ticketbox.seat.domain.SeatAvailability;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;

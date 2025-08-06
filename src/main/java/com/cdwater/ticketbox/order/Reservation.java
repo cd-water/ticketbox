@@ -11,7 +11,7 @@ import com.cdwater.ticketbox.performance.domain.Seat;
 import com.cdwater.ticketbox.performance.domain.SeatRepository;
 import com.cdwater.ticketbox.performance.domain.Section;
 import com.cdwater.ticketbox.performance.domain.SectionRepository;
-import com.cdwater.ticketbox.seat.SeatAvailability;
+import com.cdwater.ticketbox.seat.domain.SeatAvailability;
 import com.cdwater.ticketbox.waitingroom.WaitingRoomService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

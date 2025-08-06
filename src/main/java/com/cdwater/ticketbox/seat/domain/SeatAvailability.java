@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.seat;
+package com.cdwater.ticketbox.seat.domain;
 
 import com.cdwater.ticketbox.ticket.TicketRepository;
 import org.springframework.beans.factory.annotation.Value;

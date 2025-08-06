@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.seat;
+package com.cdwater.ticketbox.seat.domain;
 
 import com.cdwater.ticketbox.performance.domain.PriceTierView;
 import com.cdwater.ticketbox.performance.domain.SeatingMode;

@@ -11,7 +11,7 @@ import com.cdwater.ticketbox.order.OrderItemRepository;
 import com.cdwater.ticketbox.order.OrderRepository;
 import com.cdwater.ticketbox.order.OrderService;
 import com.cdwater.ticketbox.order.OrderStatus;
-import com.cdwater.ticketbox.seat.SeatAvailability;
+import com.cdwater.ticketbox.seat.domain.SeatAvailability;
 import com.cdwater.ticketbox.ticket.TicketIssuer;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;

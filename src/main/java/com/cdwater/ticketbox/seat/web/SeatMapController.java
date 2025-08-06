@@ -1,5 +1,7 @@
-package com.cdwater.ticketbox.seat;
+package com.cdwater.ticketbox.seat.web;
 
+import com.cdwater.ticketbox.seat.domain.SeatMapResponse;
+import com.cdwater.ticketbox.seat.domain.SeatMapService;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

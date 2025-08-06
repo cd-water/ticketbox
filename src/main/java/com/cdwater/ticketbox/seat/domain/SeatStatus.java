@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.seat;
+package com.cdwater.ticketbox.seat.domain;
 
 public enum SeatStatus {
     AVAILABLE,
