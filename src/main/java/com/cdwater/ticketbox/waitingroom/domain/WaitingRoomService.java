@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.waitingroom;
+package com.cdwater.ticketbox.waitingroom.domain;
 
 import com.cdwater.ticketbox.auth.domain.UserAccount;
 import com.cdwater.ticketbox.auth.domain.UserAccountRepository;

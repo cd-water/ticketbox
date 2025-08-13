@@ -1,5 +1,6 @@
-package com.cdwater.ticketbox.waitingroom;
+package com.cdwater.ticketbox.waitingroom.web;
 
+import com.cdwater.ticketbox.waitingroom.domain.WaitingRoomService;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
