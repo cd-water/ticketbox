@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.order;
+package com.cdwater.ticketbox.order.domain;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.order;
+package com.cdwater.ticketbox.order.domain;
 
 public enum OrderStatus {
     PENDING_PAYMENT,

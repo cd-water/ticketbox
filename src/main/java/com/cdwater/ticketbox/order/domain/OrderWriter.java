@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.order;
+package com.cdwater.ticketbox.order.domain;
 
 import com.cdwater.ticketbox.common.ApiException;
 import com.cdwater.ticketbox.performance.domain.PriceTierRepository;

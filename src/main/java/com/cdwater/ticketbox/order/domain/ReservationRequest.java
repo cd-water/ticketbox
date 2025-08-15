@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.order;
+package com.cdwater.ticketbox.order.domain;
 
 import java.util.List;
 

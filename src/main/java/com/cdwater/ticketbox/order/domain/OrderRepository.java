@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.order;
+package com.cdwater.ticketbox.order.domain;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

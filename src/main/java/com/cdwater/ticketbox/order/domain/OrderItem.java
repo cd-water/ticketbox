@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.order;
+package com.cdwater.ticketbox.order.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -7,9 +7,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.math.BigDecimal;
+
 @Entity
-@Table(name = "order_attendee")
-public class OrderAttendee {
+@Table(name = "order_item")
+public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,21 +26,21 @@ public class OrderAttendee {
     @Column(name = "seat_id")
     private Long seatId;
 
-    @Column(name = "attendee_name", nullable = false, length = 64)
-    private String attendeeName;
+    @Column(nullable = false)
+    private int quantity;
 
-    @Column(name = "attendee_id_no", nullable = false, length = 64)
-    private String attendeeIdNo;
+    @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)
+    private BigDecimal unitPrice;
 
-    protected OrderAttendee() {
+    protected OrderItem() {
     }
 
-    public OrderAttendee(Long orderId, Long priceTierId, Long seatId, String attendeeName, String attendeeIdNo) {
+    public OrderItem(Long orderId, Long priceTierId, Long seatId, int quantity, BigDecimal unitPrice) {
         this.orderId = orderId;
         this.priceTierId = priceTierId;
         this.seatId = seatId;
-        this.attendeeName = attendeeName;
-        this.attendeeIdNo = attendeeIdNo;
+        this.quantity = quantity;
+        this.unitPrice = unitPrice;
     }
 
     public Long getId() {
@@ -57,11 +59,11 @@ public class OrderAttendee {
         return seatId;
     }
 
-    public String getAttendeeName() {
-        return attendeeName;
+    public int getQuantity() {
+        return quantity;
     }
 
-    public String getAttendeeIdNo() {
-        return attendeeIdNo;
+    public BigDecimal getUnitPrice() {
+        return unitPrice;
     }
 }

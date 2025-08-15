@@ -1,9 +1,9 @@
 package com.cdwater.ticketbox.ticket;
 
 import com.cdwater.ticketbox.common.ApiException;
-import com.cdwater.ticketbox.order.Order;
-import com.cdwater.ticketbox.order.OrderAttendee;
-import com.cdwater.ticketbox.order.OrderAttendeeRepository;
+import com.cdwater.ticketbox.order.domain.Order;
+import com.cdwater.ticketbox.order.domain.OrderAttendee;
+import com.cdwater.ticketbox.order.domain.OrderAttendeeRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 

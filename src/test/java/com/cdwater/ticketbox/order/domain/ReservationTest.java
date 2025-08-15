@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.order;
+package com.cdwater.ticketbox.order.domain;
 
 import com.cdwater.ticketbox.support.ApiIntegrationTest;
 import com.cdwater.ticketbox.auth.domain.UserAccount;
