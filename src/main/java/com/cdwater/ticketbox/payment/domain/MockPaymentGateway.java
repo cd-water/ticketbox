@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.payment;
+package com.cdwater.ticketbox.payment.domain;
 
 import com.cdwater.ticketbox.common.HmacSigner;
 import org.slf4j.Logger;
@@ -67,7 +67,7 @@ public class MockPaymentGateway {
         }
     }
 
-    static String canonical(String providerTxnNo, String status, String amount) {
+    public static String canonical(String providerTxnNo, String status, String amount) {
         return providerTxnNo + "|" + status + "|" + amount;
     }
 

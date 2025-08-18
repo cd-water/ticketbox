@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.payment;
+package com.cdwater.ticketbox.payment.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

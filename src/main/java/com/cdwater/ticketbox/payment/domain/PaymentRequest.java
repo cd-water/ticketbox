@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.payment;
+package com.cdwater.ticketbox.payment.domain;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;

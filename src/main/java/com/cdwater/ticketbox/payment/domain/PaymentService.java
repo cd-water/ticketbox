@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.payment;
+package com.cdwater.ticketbox.payment.domain;
 
 import com.cdwater.ticketbox.auth.domain.UserAccount;
 import com.cdwater.ticketbox.auth.domain.UserAccountRepository;
