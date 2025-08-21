@@ -12,7 +12,7 @@ import com.cdwater.ticketbox.order.domain.OrderRepository;
 import com.cdwater.ticketbox.order.domain.OrderService;
 import com.cdwater.ticketbox.order.domain.OrderStatus;
 import com.cdwater.ticketbox.seat.domain.SeatAvailability;
-import com.cdwater.ticketbox.ticket.TicketIssuer;
+import com.cdwater.ticketbox.ticket.domain.TicketIssuer;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

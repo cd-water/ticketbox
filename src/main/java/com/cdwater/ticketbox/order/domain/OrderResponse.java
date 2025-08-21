@@ -1,6 +1,6 @@
 package com.cdwater.ticketbox.order.domain;
 
-import com.cdwater.ticketbox.ticket.TicketResponse;
+import com.cdwater.ticketbox.ticket.domain.TicketResponse;
 
 import java.math.BigDecimal;
 import java.time.Instant;

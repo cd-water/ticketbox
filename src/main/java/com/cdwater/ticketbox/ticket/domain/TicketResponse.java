@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.ticket;
+package com.cdwater.ticketbox.ticket.domain;
 
 public record TicketResponse(
         Long id,

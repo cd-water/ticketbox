@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.ticket;
+package com.cdwater.ticketbox.ticket.domain;
 
 public enum TicketStatus {
     ISSUED,

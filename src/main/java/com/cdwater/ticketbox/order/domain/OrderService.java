@@ -16,7 +16,7 @@ import com.cdwater.ticketbox.performance.domain.Section;
 import com.cdwater.ticketbox.performance.domain.SectionRepository;
 import com.cdwater.ticketbox.payment.domain.PaymentRepository;
 import com.cdwater.ticketbox.payment.domain.PaymentStatus;
-import com.cdwater.ticketbox.ticket.TicketService;
+import com.cdwater.ticketbox.ticket.domain.TicketService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

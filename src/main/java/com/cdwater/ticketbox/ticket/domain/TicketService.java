@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.ticket;
+package com.cdwater.ticketbox.ticket.domain;
 
 import com.cdwater.ticketbox.performance.domain.PriceTier;
 import com.cdwater.ticketbox.performance.domain.PriceTierRepository;

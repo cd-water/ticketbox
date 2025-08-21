@@ -1,6 +1,6 @@
 package com.cdwater.ticketbox.seat.domain;
 
-import com.cdwater.ticketbox.ticket.TicketRepository;
+import com.cdwater.ticketbox.ticket.domain.TicketRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;

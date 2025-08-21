@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.ticket;
+package com.cdwater.ticketbox.ticket.domain;
 
 import com.cdwater.ticketbox.common.ApiException;
 import com.cdwater.ticketbox.order.domain.Order;

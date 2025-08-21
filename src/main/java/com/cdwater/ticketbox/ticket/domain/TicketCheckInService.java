@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.ticket;
+package com.cdwater.ticketbox.ticket.domain;
 
 import com.cdwater.ticketbox.common.ApiException;
 import com.cdwater.ticketbox.common.HmacSigner;
@@ -48,7 +48,8 @@ public class TicketCheckInService {
     }
 
     @Transactional
-    public CheckInResponse checkIn(String payload) {
+    public CheckInResponse checkIn(CheckInRequest request) {
+        String payload = request.payload();
         if (payload == null || payload.isBlank()) {
             throw invalidTicket();
         }
