@@ -1,5 +1,7 @@
-package com.cdwater.ticketbox.storage;
+package com.cdwater.ticketbox.storage.web;
 
+import com.cdwater.ticketbox.storage.domain.StorageService;
+import com.cdwater.ticketbox.storage.domain.UploadResponse;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;

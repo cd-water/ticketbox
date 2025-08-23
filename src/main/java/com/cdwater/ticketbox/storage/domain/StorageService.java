@@ -1,4 +1,4 @@
-package com.cdwater.ticketbox.storage;
+package com.cdwater.ticketbox.storage.domain;
 
 import com.cdwater.ticketbox.common.ApiException;
 import io.minio.BucketExistsArgs;

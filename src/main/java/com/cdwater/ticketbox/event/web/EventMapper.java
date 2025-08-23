@@ -5,7 +5,7 @@ import com.cdwater.ticketbox.event.domain.Event;
 import com.cdwater.ticketbox.event.domain.EventDetail;
 import com.cdwater.ticketbox.event.domain.EventSummary;
 import com.cdwater.ticketbox.performance.domain.PerformanceSummary;
-import com.cdwater.ticketbox.storage.StorageService;
+import com.cdwater.ticketbox.storage.domain.StorageService;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
