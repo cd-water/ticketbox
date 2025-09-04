@@ -1,4 +1,4 @@
-import type { OrderStatus } from '@/lib/api'
+import type { OrderStatus } from '@/api/client'
 
 const STATUS_PRESENTATION: Record<OrderStatus, { label: string; className: string }> = {
   PENDING_PAYMENT: {

@@ -15,7 +15,7 @@ import {
   type AdminEvent,
   type Performance,
   type PriceTier,
-} from '@/lib/api'
+} from '@/api/client'
 
 const route = useRoute()
 const router = useRouter()

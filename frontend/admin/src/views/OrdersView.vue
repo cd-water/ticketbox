@@ -8,7 +8,7 @@ import {
   type AdminOrderEntry,
   type AdminOrderItem,
   type AdminOrderSummary,
-} from '@/lib/api'
+} from '@/api/client'
 
 const size = 20
 

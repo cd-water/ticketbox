@@ -7,7 +7,7 @@ import {
   listSections,
   type Performance,
   type SectionSummary,
-} from '@/lib/api'
+} from '@/api/client'
 
 const props = defineProps<{
   modelValue: boolean

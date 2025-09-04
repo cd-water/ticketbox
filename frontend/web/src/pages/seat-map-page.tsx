@@ -10,7 +10,7 @@ import {
   getToken,
   type SeatMap,
   type SeatView,
-} from '@/lib/api'
+} from '@/api/client'
 
 const MAX_SEATS_PER_ORDER = 4
 

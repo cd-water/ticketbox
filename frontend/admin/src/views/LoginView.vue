@@ -2,7 +2,7 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { FormInstance, FormRules } from 'element-plus'
-import { ApiError, login, setToken } from '@/lib/api'
+import { ApiError, login, setToken } from '@/api/client'
 
 const router = useRouter()
 const formRef = ref<FormInstance>()

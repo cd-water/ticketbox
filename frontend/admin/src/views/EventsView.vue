@@ -11,7 +11,7 @@ import {
   updateEvent,
   uploadFile,
   type AdminEvent,
-} from '@/lib/api'
+} from '@/api/client'
 
 const size = 20
 const router = useRouter()

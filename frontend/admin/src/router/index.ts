@@ -4,7 +4,7 @@ import EventsView from '@/views/EventsView.vue'
 import LoginView from '@/views/LoginView.vue'
 import OrdersView from '@/views/OrdersView.vue'
 import PerformancesView from '@/views/PerformancesView.vue'
-import { getToken } from '@/lib/api'
+import { getToken } from '@/api/client'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { SiteHeader } from '@/components/site-header'
-import { ApiError, getEvent, type EventDetail } from '@/lib/api'
+import { ApiError, getEvent, type EventDetail } from '@/api/client'
 import { formatDateTime } from '@/lib/format'
 
 export function EventDetailPage() {

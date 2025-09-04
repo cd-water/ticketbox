@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { SiteHeader } from '@/components/site-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ApiError, listEvents, type EventSummary, type PageResult } from '@/lib/api'
+import { ApiError, listEvents, type EventSummary, type PageResult } from '@/api/client'
 
 const PAGE_SIZE = 12
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { clearToken, me, type Profile } from '@/lib/api'
+import { clearToken, me, type Profile } from '@/api/client'
 
 const router = useRouter()
 const profile = ref<Profile | null>(null)

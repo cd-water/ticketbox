@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { OrderStatusBadge } from '@/components/order-status-badge'
 import { SiteHeader } from '@/components/site-header'
-import { ApiError, listOrders, type Order, type PageResult } from '@/lib/api'
+import { ApiError, listOrders, type Order, type PageResult } from '@/api/client'
 import { formatDateTime } from '@/lib/format'
 
 export function OrderListPage() {

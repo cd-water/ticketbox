@@ -7,7 +7,7 @@ import {
   joinWaitingRoom,
   waitingRoomStatus,
   type WaitingRoomStatus,
-} from '@/lib/api'
+} from '@/api/client'
 import { formatDateTime } from '@/lib/format'
 
 export function WaitingRoomPage() {

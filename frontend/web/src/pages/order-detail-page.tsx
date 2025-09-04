@@ -13,7 +13,7 @@ import {
   getOrder,
   type AttendeeInput,
   type Order,
-} from '@/lib/api'
+} from '@/api/client'
 import { formatDateTime } from '@/lib/format'
 
 export function OrderDetailPage() {

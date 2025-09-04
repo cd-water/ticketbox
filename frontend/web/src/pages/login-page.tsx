@@ -5,7 +5,7 @@ import { FormAlert } from '@/components/form-alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ApiError, login, setToken } from '@/lib/api'
+import { ApiError, login, setToken } from '@/api/client'
 
 export function LoginPage() {
   const navigate = useNavigate()

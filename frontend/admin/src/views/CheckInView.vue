@@ -2,7 +2,7 @@
 import { onBeforeUnmount, ref } from 'vue'
 import { BrowserQRCodeReader, type IScannerControls } from '@zxing/browser'
 import { ElMessage } from 'element-plus'
-import { ApiError, checkIn, type CheckInResult } from '@/lib/api'
+import { ApiError, checkIn, type CheckInResult } from '@/api/client'
 
 const payload = ref('')
 const checking = ref(false)
