@@ -38,20 +38,27 @@
 
 ## 3. 代码结构
 
-单模块 Maven，按功能分包；管理端接口放在各功能包内，统一 `/api/admin/**` 前缀，不单设 admin 包。
+单模块 Maven，按功能分包；每个业务 feature 内部再分 `web` 与 `domain`。管理端接口放在各功能包内，统一 `/api/admin/**` 前缀，不单设 admin 包。
+
+- `web/`：Controller，以及只被 Controller 使用的映射器；
+- `domain/`：实体、仓储、服务、枚举、入站 command 与响应读模型；
+- 配置类留在 feature 根；`dev` 不拆分。
+
+依赖方向为 `web → domain` 单向（Spring 的 `@Configuration` 可装配 web 组件），feature 之间只允许依赖对方 `domain`；由 `ArchitectureTest` 固化。决策与取舍见 ADR 0003。
 
 ```
 com.cdwater.ticketbox
-├── common        # 异常、ProblemDetail、分页、校验
-├── auth          # 注册/登录、JWT、用户
-├── event         # 演出、城市筛选、封面
-├── performance   # 场次、区域、座位生成
-├── seat          # 座位图查询、座位状态
-├── order         # 下单、取消、超时、限购
-├── payment       # mock 支付、回调
-├── ticket        # 出票、核销
-├── waitingroom   # 等待室准入
-└── storage       # MinIO 上传、预签名 URL
+├── common            # 异常、分页、HMAC；web/ 放异常处理与 SPA 转发
+├── auth              # web/ Controller 与 JWT 过滤器；domain/ 服务、实体、角色；根 SecurityConfig
+├── event             # web/ Controller、映射器；domain/ 实体、仓储、服务、读模型
+├── performance       # web/ Admin Controller；domain/ 场次、票档、区域、座位、库存
+├── seat              # web/ 座位图 Controller；domain/ 锁与座位图服务
+├── order             # web/ Controller；domain/ 下单、预留、超时、限购
+├── payment           # web/ Controller；domain/ mock 支付、回调
+├── ticket            # web/ 核销 Controller；domain/ 出票、二维码、核销
+├── waitingroom       # web/ Controller；domain/ 准入服务
+├── storage           # web/ Controller；domain/ 上传服务；根 MinioConfig
+└── dev               # 开发环境种子数据（不拆分）
 ```
 
 ## 4. 数据模型
