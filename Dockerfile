@@ -27,5 +27,5 @@ WORKDIR /app
 RUN useradd --system --uid 1001 ticketbox
 COPY --from=backend-build /build/target/ticketbox-*.jar app.jar
 USER 1001
-EXPOSE 8888
+EXPOSE 8900
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

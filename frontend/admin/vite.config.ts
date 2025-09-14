@@ -12,9 +12,9 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
-    port: 5174,
+    port: 5902,
     proxy: {
-      '/api': process.env.VITE_API_TARGET ?? 'http://localhost:8888',
+      '/api': process.env.VITE_API_TARGET ?? 'http://localhost:8900',
     },
   },
 }))

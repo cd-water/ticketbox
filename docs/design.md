@@ -17,12 +17,12 @@
 
 ```
 ┌──────────────┐   ┌──────────────┐
-│ web (React)  │   │ admin (Vue)  │   开发: Vite 5173 / 5174
+│ web (React)  │   │ admin (Vue)  │   开发: Vite 5901 / 5902
 └──────┬───────┘   └──────┬───────┘   生产: 打进 Spring static/
        │  /api             │  /api
        └────────┬──────────┘
         ┌───────▼─────────────────────────────┐
-        │  ticketbox-app (Spring Boot, :8888) │
+        │  ticketbox-app (Spring Boot, :8900) │
         │  auth │ event │ performance │ seat  │
         │  order │ payment │ ticket │ waitingroom
         └───┬───────────┬───────────┬─────────┘
@@ -143,13 +143,13 @@ com.cdwater.ticketbox
 
 ```
 frontend/
-├── web/     React + TS + Tailwind + shadcn/ui，:5173
+├── web/     React + TS + Tailwind + shadcn/ui，:5901
 │   页面：演出列表、演出详情、等待室、选座、登录注册、我的订单、订单详情
-└── admin/   Vue + TS + Element Plus，:5174
+└── admin/   Vue + TS + Element Plus，:5902
     页面：登录、演出管理、场次管理、票档管理、座位生成、订单查询、扫码核销
 ```
 
-- 开发：Vite proxy `/api` → `http://localhost:8888`。
+- 开发：Vite proxy `/api` → `http://localhost:8900`。
 - 生产：构建产物复制进 Spring `static/`，web 挂 `/`，admin 挂 `/admin/`。
 - 核销：`@zxing/browser` 摄像头扫码 + 手动输入票号兜底。
 
@@ -168,8 +168,8 @@ frontend/
 | --- | --- | --- | --- | --- | --- |
 | mysql | `mysql:8.0.46` | 3306 | `ticketbox-mysql` | `mysql-data` | 用户 `ticketmysql`/`ticketmysql`，root 密码 `ticketmysql`，库 `ticketbox` |
 | redis | `redis:7.4.11` | 6379 | `ticketbox-redis` | `redis-data` | `requirepass ticketredis` |
-| minio | `quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z` | 9001(API) / 9002(控制台) | `ticketbox-minio` | `minio-data` | `ticketminio`/`ticketminio` |
-| app | 本地构建（多阶段 Dockerfile） | 8888 | `ticketbox-app` | — | 环境变量注入 |
+| minio | `quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z` | 9000(API) / 9001(控制台) | `ticketbox-minio` | `minio-data` | `ticketminio`/`ticketminio` |
+| app | 本地构建（多阶段 Dockerfile） | 8900 | `ticketbox-app` | — | 环境变量注入 |
 
 网络统一 `ticketbox-network`。开发时只起 mysql/redis/minio，后端 `./mvnw spring-boot:run`；生产 `docker compose up` 全量启动。
 
